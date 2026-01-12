@@ -19,6 +19,29 @@
     
     <!-- Nosso CSS -->
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .aviso-home {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin: 2rem auto;
+            max-width: 800px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .aviso-home h3 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .aviso-home p {
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
     <!-- Loading -->
@@ -113,8 +136,8 @@
                     <ul>
                         <li><a href="#inicio"><i class="fas fa-home"></i> Início</a></li>
                         <li><a href="#mapa"><i class="fas fa-map"></i> Mapa</a></li>
-                        <li><a href="#empresas"><i class="fas fa-building"></i> Empresas</a></li>
-                        <li><a href="#avaliar"><i class="fas fa-star"></i> Avaliar</a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> Empresas</a></li>
+                        <li><a href="avaliacao.html"><i class="fas fa-star"></i> Avaliar</a></li>
                         <li><a href="#como-funciona"><i class="fas fa-question-circle"></i> Como Funciona</a></li>
                         <li id="auth-nav-item">
                             <div class="user-menu-container">
@@ -145,7 +168,7 @@
                     <button class="btn btn-primary" onclick="scrollToElement('#mapa')">
                         <i class="fas fa-map-marker-alt"></i> Ver Empresas no Mapa
                     </button>
-                    <button class="btn btn-secondary" onclick="showAuthModal()">
+                    <button class="btn btn-secondary" onclick="window.location.href='avaliacao.html'">
                         <i class="fas fa-star"></i> Avaliar uma Empresa
                     </button>
                 </div>
@@ -182,6 +205,60 @@
                         <i class="fas fa-crosshairs"></i> Ativar
                     </button>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section class="map-section" id="mapa">
+        <div class="container">
+            <div class="section-header">
+                <h2>Mapa de Empresas</h2>
+                <p>Encontre empresas próximas à sua localização com avaliações reais</p>
+            </div>
+            
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <button class="btn-map" onclick="locateUser()">
+                        <i class="fas fa-crosshairs"></i> Minha Localização
+                    </button>
+                    <button class="btn-map" onclick="resetMapView()">
+                        <i class="fas fa-sync-alt"></i> Resetar Vista
+                    </button>
+                </div>
+                <div class="map-info">
+                    <div class="location-info" id="location-info" style="display: none;">
+                        <p><strong>Sua Localização:</strong></p>
+                        <p id="current-location">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Companies Section -->
+    <section class="companies-section" id="empresas">
+        <div class="container">
+            <div class="section-header">
+                <h2>Empresas Próximas</h2>
+                <p>Algumas empresas avaliadas na plataforma ReputAí</p>
+            </div>
+            
+            <div id="companies-container" class="companies-grid">
+                <!-- Empresas serão carregadas aqui (apenas algumas) -->
+            </div>
+            
+            <div id="no-companies" style="text-align: center; padding: 3rem; display: none;">
+                <i class="fas fa-building" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
+                <h3>Nenhuma empresa encontrada</h3>
+                <p>Use a busca para encontrar empresas.</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="empresas.html" class="btn btn-primary">
+                    <i class="fas fa-building"></i> Ver Todas as Empresas
+                </a>
             </div>
         </div>
     </section>
@@ -263,124 +340,14 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Map Section -->
-    <section class="map-section" id="mapa">
-        <div class="container">
-            <div class="section-header">
-                <h2>Mapa de Empresas</h2>
-                <p>Encontre empresas próximas à sua localização com avaliações reais</p>
-            </div>
             
-            <div class="map-container">
-                <div id="map"></div>
-                <div class="map-controls">
-                    <button class="btn-map" onclick="locateUser()">
-                        <i class="fas fa-crosshairs"></i> Minha Localização
-                    </button>
-                    <button class="btn-map" onclick="resetMapView()">
-                        <i class="fas fa-sync-alt"></i> Resetar Vista
-                    </button>
-                </div>
-                <div class="map-info">
-                    <div class="location-info" id="location-info" style="display: none;">
-                        <p><strong>Sua Localização:</strong></p>
-                        <p id="current-location">Carregando...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Companies Section -->
-    <section class="companies-section" id="empresas">
-        <div class="container">
-            <div class="section-header">
-                <h2>Empresas Avaliadas</h2>
-                <p>Empresas brasileiras com avaliações da comunidade ReputAí</p>
-            </div>
-            
-            <div id="companies-container" class="companies-grid">
-                <!-- Empresas serão carregadas aqui -->
-            </div>
-            
-            <div id="no-companies" style="text-align: center; padding: 3rem; display: none;">
-                <i class="fas fa-building" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
-                <h3>Nenhuma empresa encontrada</h3>
-                <p>Use a busca para encontrar empresas.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Evaluation Section -->
-    <section class="evaluation-section" id="avaliar">
-        <div class="container">
-            <div class="section-header">
-                <h2>Avalie Sua Experiência</h2>
-                <p>Compartilhe sua experiência para ajudar outros profissionais</p>
-            </div>
-            
-            <div class="evaluation-card">
-                <h3>Conte sua experiência de trabalho</h3>
-                
-                <div class="form-group">
-                    <label>Nome da Empresa *</label>
-                    <input type="text" id="evaluate-company" placeholder="Digite o nome da empresa que você trabalhou">
-                    <small style="color: var(--gray); display: block; margin-top: 5px;">
-                        Não encontra a empresa? Ela será cadastrada automaticamente
-                    </small>
-                </div>
-                
-                <div class="form-group">
-                    <label>Setor da Empresa</label>
-                    <select id="evaluate-sector" style="width: 100%; padding: 12px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                        <option value="">Selecione o setor (opcional)</option>
-                        <option value="Tecnologia">Tecnologia</option>
-                        <option value="Finanças">Finanças</option>
-                        <option value="Saúde">Saúde</option>
-                        <option value="Varejo">Varejo</option>
-                        <option value="Serviços">Serviços</option>
-                        <option value="Energia">Energia</option>
-                        <option value="Educação">Educação</option>
-                        <option value="Outros">Outros</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Localização da Empresa</label>
-                    <input type="text" id="evaluate-location" placeholder="Cidade, Estado (opcional)">
-                </div>
-                
-                <div class="form-group">
-                    <label>Avaliação Geral *</label>
-                    <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5">
-                        <label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4">
-                        <label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3">
-                        <label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2">
-                        <label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1">
-                        <label for="star1">★</label>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Sua Avaliação * (mínimo 50 caracteres)</label>
-                    <textarea id="evaluation-text" placeholder="Conte sua experiência de trabalho de forma detalhada..." rows="5"></textarea>
-                </div>
-                
-                <button class="btn btn-primary" onclick="verificarAvaliacao()" style="width: 100%; padding: 15px;">
-                    <i class="fas fa-paper-plane"></i> Enviar Avaliação
-                </button>
-                
-                <p style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: var(--gray);">
-                    <i class="fas fa-info-circle"></i> Ao enviar, você concorda com nossa política de avaliações
-                </p>
+            <!-- Aviso sobre página de avaliação -->
+            <div class="aviso-home">
+                <h3><i class="fas fa-star"></i> Quer avaliar uma empresa?</h3>
+                <p>Clique no botão "Avaliar" no menu ou no botão abaixo para acessar nossa página completa de avaliações.</p>
+                <a href="avaliacao.html" class="btn btn-primary" style="background: white; color: #d97706;">
+                    <i class="fas fa-star"></i> Ir para Página de Avaliação
+                </a>
             </div>
         </div>
     </section>
@@ -400,8 +367,8 @@
                     <ul>
                         <li><a href="#inicio">Início</a></li>
                         <li><a href="#mapa">Mapa</a></li>
-                        <li><a href="#empresas">Empresas</a></li>
-                        <li><a href="#avaliar">Avaliar</a></li>
+                        <li><a href="empresas.html">Empresas</a></li>
+                        <li><a href="avaliacao.html">Avaliar</a></li>
                         <li><a href="#como-funciona">Como Funciona</a></li>
                     </ul>
                 </div>
@@ -504,7 +471,7 @@
             function initApp() {
                 initTypingEffect();
                 initMap();
-                loadCompanies();
+                loadHomeCompanies();
                 initComoFuncionaSection();
                 
                 // Verificar se há permissão de localização salva

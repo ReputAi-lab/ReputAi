@@ -1,4 +1,4 @@
-// script.js - Configuração principal ATUALIZADA COM SEÇÃO "COMO FUNCIONA"
+// script.js - Configuração principal ATUALIZADA
 let currentUser = null;
 let userLocation = null;
 let locationPermission = false;
@@ -7,6 +7,18 @@ let map = null;
 let companies = [];
 let evaluationData = null;
 
+// ==================== HEADER SCROLL ====================
+function initHeaderScroll() {
+    window.addEventListener('scroll', function() {
+        const header = document.querySelector('header');
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    });
+}
+
 // ==================== ANIMAÇÃO DE DIGITAÇÃO ====================
 function initTypingEffect() {
     const typingElement = document.querySelector('.typing-text');
@@ -14,9 +26,8 @@ function initTypingEffect() {
     
     const phrases = [
         "o melhor lugar",
-        "a empresa ideal", 
-        "seu próximo emprego",
-        "sua nova jornada"
+        "a equipe ideal", 
+        "a melhor empresa"
     ];
     
     let phraseIndex = 0;
@@ -78,6 +89,7 @@ function initMap() {
 function addCompaniesToMap(companiesArray) {
     if (!map) return;
     
+    // Limpar marcadores existentes
     map.eachLayer(layer => {
         if (layer instanceof L.Marker) {
             map.removeLayer(layer);
@@ -222,11 +234,15 @@ function loadCompanies() {
     }
     
     window.companies = companies;
-    displayCompanies(companies);
-    
-    if (map) {
-        addCompaniesToMap(companies);
-    }
+    return companies;
+}
+
+// Função para carregar apenas algumas empresas na home
+function loadHomeCompanies() {
+    const allCompanies = loadCompanies();
+    // Mostrar apenas as primeiras 4 empresas na home
+    const homeCompanies = allCompanies.slice(0, 4);
+    displayCompanies(homeCompanies);
 }
 
 function displayCompanies(companiesToShow) {
@@ -262,7 +278,7 @@ function displayCompanies(companiesToShow) {
                     <span>${company.averageRating.toFixed(1)}/5 (${company.reviewCount})</span>
                 </div>
                 
-                <p>${company.description}</p>
+                <p>${company.description || 'Empresa cadastrada na plataforma ReputAí'}</p>
                 
                 <div class="company-tags">
                     <span class="tag">${company.sector}</span>
@@ -277,8 +293,8 @@ function searchCompanies() {
     const searchTerm = document.getElementById('search-company').value.toLowerCase().trim();
     
     if (!searchTerm) {
-        displayCompanies(companies);
-        if (map) addCompaniesToMap(companies);
+        loadHomeCompanies();
+        if (map) addCompaniesToMap(companies.slice(0, 4));
         return;
     }
     
@@ -286,7 +302,7 @@ function searchCompanies() {
         company.name.toLowerCase().includes(searchTerm) ||
         company.sector.toLowerCase().includes(searchTerm) ||
         company.location.toLowerCase().includes(searchTerm) ||
-        company.description.toLowerCase().includes(searchTerm)
+        (company.description && company.description.toLowerCase().includes(searchTerm))
     );
     
     displayCompanies(filtered);
@@ -391,6 +407,7 @@ function prosseguirAvaliacao() {
 }
 
 function submitEvaluation(evalData) {
+    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
     const existingCompany = companies.find(c => 
         c.name.toLowerCase() === evalData.companyName.toLowerCase()
     );
@@ -447,30 +464,120 @@ function submitEvaluation(evalData) {
     
     showToast('Avaliação enviada com sucesso!', 'success');
     
-    document.getElementById('evaluate-company').value = '';
-    document.getElementById('evaluation-text').value = '';
-    document.getElementById('evaluate-sector').value = '';
-    document.getElementById('evaluate-location').value = '';
+    // Limpar formulário apenas se estiver na home
+    const evaluateCompanyInput = document.getElementById('evaluate-company');
+    const evaluationTextInput = document.getElementById('evaluation-text');
+    
+    if (evaluateCompanyInput) evaluateCompanyInput.value = '';
+    if (evaluationTextInput) evaluationTextInput.value = '';
+    
+    // Limpar outros campos se existirem
+    const evaluateSector = document.getElementById('evaluate-sector');
+    const evaluateLocation = document.getElementById('evaluate-location');
+    if (evaluateSector) evaluateSector.value = '';
+    if (evaluateLocation) evaluateLocation.value = '';
+    
+    // Limpar estrelas
     document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
     
     evaluationData = null;
     
-    displayCompanies(companies);
+    // Atualizar display na home
+    if (typeof loadHomeCompanies === 'function') {
+        loadHomeCompanies();
+    }
+    
     if (map) {
-        addCompaniesToMap(companies);
+        const updatedCompanies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
+        addCompaniesToMap(updatedCompanies.slice(0, 4));
         
-        const newCompany = companies.find(c => c.id === companyId);
+        const newCompany = updatedCompanies.find(c => c.id === companyId);
         if (newCompany && newCompany.lat && newCompany.lng) {
             map.setView([newCompany.lat, newCompany.lng], 12);
         }
     }
 }
 
+// ==================== FUNÇÕES PARA EXIBIR DETALHES ADICIONAIS ====================
+function formatAmbientStats(ambientStats) {
+    if (!ambientStats || Object.keys(ambientStats).length === 0) {
+        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre ambiente</p>';
+    }
+    
+    const total = Object.values(ambientStats).reduce((sum, count) => sum + count, 0);
+    const items = Object.entries(ambientStats).map(([ambient, count]) => {
+        const percentage = ((count / total) * 100).toFixed(0);
+        const icons = {
+            'ótimo': 'fas fa-laugh-beam',
+            'bom': 'fas fa-smile',
+            'normal': 'fas fa-meh',
+            'ruim': 'fas fa-frown'
+        };
+        
+        return `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <i class="${icons[ambient] || 'fas fa-question'}" style="color: ${getAmbientColor(ambient)};"></i>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${ambient.charAt(0).toUpperCase() + ambient.slice(1)}</span>
+                        <span>${percentage}%</span>
+                    </div>
+                    <div style="height: 6px; background: var(--gray-light); border-radius: 3px; overflow: hidden; margin-top: 4px;">
+                        <div style="height: 100%; width: ${percentage}%; background: ${getAmbientColor(ambient)};"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    return `
+        <div style="background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 15px;">
+            <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--dark);">Ambiente de Trabalho</h5>
+            ${items}
+            <p style="font-size: 0.8rem; color: var(--gray); margin-top: 10px; margin-bottom: 0;">
+                Baseado em ${total} avaliação${total !== 1 ? 'es' : ''}
+            </p>
+        </div>
+    `;
+}
+
+function getAmbientColor(ambient) {
+    const colors = {
+        'ótimo': '#10b981',
+        'bom': '#3b82f6',
+        'normal': '#f59e0b',
+        'ruim': '#dc2626'
+    };
+    return colors[ambient] || '#64748b';
+}
+
+function formatBenefits(benefitsList) {
+    if (!benefitsList || benefitsList.length === 0) {
+        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre benefícios</p>';
+    }
+    
+    return `
+        <div style="margin-bottom: 15px;">
+            <h5 style="margin-bottom: 8px; color: var(--dark);">Benefícios Oferecidos</h5>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${benefitsList.map(benefit => `
+                    <span style="background: #dbeafe; color: #1d4ed8; padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-check-circle" style="font-size: 0.8rem;"></i>
+                        ${benefit}
+                    </span>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 function showCompanyDetails(companyId) {
+    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
+    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
     const company = companies.find(c => c.id === companyId);
+    
     if (!company) return;
     
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
     const companyEvaluations = evaluations.filter(e => e.companyId === companyId);
     
     const modalContent = `
@@ -497,7 +604,7 @@ function showCompanyDetails(companyId) {
             
             <div style="margin-bottom: 20px;">
                 <h4 style="color: var(--dark); margin-bottom: 10px;">Descrição</h4>
-                <p style="color: var(--text);">${company.description}</p>
+                <p style="color: var(--text);">${company.description || 'Empresa cadastrada na plataforma ReputAí'}</p>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <span style="background: var(--gray-light); padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">
                         ${company.sector}
@@ -508,7 +615,13 @@ function showCompanyDetails(companyId) {
                 </div>
             </div>
             
-            <div>
+            <!-- Nova seção: Estatísticas de Ambiente -->
+            ${company.ambientStats ? formatAmbientStats(company.ambientStats) : ''}
+            
+            <!-- Nova seção: Benefícios -->
+            ${company.benefitsList ? formatBenefits(company.benefitsList) : ''}
+            
+            <div style="margin-top: 20px;">
                 <h4 style="color: var(--dark); margin-bottom: 15px;">
                     Avaliações (${companyEvaluations.length})
                 </h4>
@@ -523,6 +636,40 @@ function showCompanyDetails(companyId) {
                                     </div>
                                 </div>
                                 <p style="color: var(--text); margin-bottom: 8px; font-size: 0.95rem;">${eval.text}</p>
+                                
+                                <!-- Exibir dados opcionais da avaliação -->
+                                ${eval.ambient ? `
+                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+                                        <i class="fas fa-users" style="color: var(--gray); font-size: 0.9rem;"></i>
+                                        <span style="color: var(--gray); font-size: 0.9rem;">Ambiente: ${eval.ambient}</span>
+                                    </div>
+                                ` : ''}
+                                
+                                ${eval.benefits && eval.benefits.length > 0 ? `
+                                    <div style="margin-bottom: 5px;">
+                                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px;">
+                                            <i class="fas fa-gift" style="color: var(--gray); font-size: 0.9rem;"></i>
+                                            <span style="color: var(--gray); font-size: 0.9rem;">Benefícios:</span>
+                                        </div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 5px; font-size: 0.85rem;">
+                                            ${eval.benefits.map(benefit => `
+                                                <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 10px;">
+                                                    ${benefit}
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${eval.salary ? `
+                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
+                                        <i class="fas fa-money-bill-wave" style="color: var(--gray); font-size: 0.9rem;"></i>
+                                        <span style="color: var(--gray); font-size: 0.9rem;">
+                                            Salário: R$ ${eval.salary.amount} ${eval.salary.period === 'mensal' ? '/mês' : '/ano'}
+                                        </span>
+                                    </div>
+                                ` : ''}
+                                
                                 <small style="color: var(--gray);">
                                     ${new Date(eval.date).toLocaleDateString('pt-BR')}
                                     ${eval.avisoAceito ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: 5px;"></i>' : ''}
@@ -614,6 +761,7 @@ document.head.appendChild(highlightStyle);
 
 // ==================== MODAL GENERICO ====================
 function showModal(content) {
+    // Fechar modal existente
     closeModal();
     
     const modal = document.createElement('div');
@@ -746,9 +894,10 @@ function checkLocationPermission() {
 
 // ==================== INICIALIZAÇÃO ====================
 function initApp() {
+    initHeaderScroll();
     initTypingEffect();
     initMap();
-    loadCompanies();
+    loadHomeCompanies();
     initComoFuncionaSection();
     checkLocationPermission();
     
@@ -808,9 +957,11 @@ window.locateUser = locateUser;
 window.resetMapView = resetMapView;
 window.requestLocationPermission = requestLocationPermission;
 window.showCompanyDetails = showCompanyDetails;
-window.showAdminPanel = showAdminPanel;
 window.closeModal = closeModal;
 window.hideAvisoModal = hideAvisoModal;
 window.prosseguirAvaliacao = prosseguirAvaliacao;
 window.showCompanyDetailsFromMap = showCompanyDetailsFromMap;
 window.scrollToComoFunciona = scrollToComoFunciona;
+window.loadHomeCompanies = loadHomeCompanies;
+window.showModal = showModal;
+window.showToast = showToast;
