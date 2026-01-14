@@ -378,7 +378,7 @@ function showMyEvaluations() {
     const modalContent = `
         <div style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
             <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="color: var(--dark); margin: 0;">
+                <h3 style="margin: 0; color: var(--dark);">
                     Minhas Avaliações (${userEvaluations.length})
                 </h3>
             </div>

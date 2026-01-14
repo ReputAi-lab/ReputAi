@@ -79,6 +79,13 @@ header {
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border-bottom: 1px solid var(--gray-light);
+    transition: all 0.3s ease;
+}
+
+/* Header quando scrolled */
+header.scrolled {
+    padding: 0.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .header-content {
@@ -105,16 +112,34 @@ header {
     justify-content: center;
     font-weight: bold;
     font-size: 24px;
+    transition: all 0.3s ease;
+}
+
+/* Reduzir tamanho do logo quando header scrolled */
+header.scrolled .logo-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
 }
 
 .logo-text h1 {
     font-size: 1.5rem;
     color: var(--dark);
+    transition: all 0.3s ease;
+}
+
+header.scrolled .logo-text h1 {
+    font-size: 1.2rem;
 }
 
 .logo-text span {
     color: var(--gray);
     font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+header.scrolled .logo-text span {
+    font-size: 0.8rem;
 }
 
 /* ==================== NAVEGAÇÃO ==================== */
@@ -123,6 +148,12 @@ nav ul {
     list-style: none;
     gap: 1rem;
     align-items: center;
+    transition: all 0.3s ease;
+}
+
+/* Reduzir gap quando header scrolled */
+header.scrolled nav ul {
+    gap: 0.5rem;
 }
 
 nav a {
@@ -135,10 +166,22 @@ nav a {
     align-items: center;
     gap: 8px;
     font-weight: 500;
+    font-size: 0.95rem;
+}
+
+/* Reduzir padding e font-size quando header scrolled */
+header.scrolled nav a {
+    padding: 6px 12px;
+    font-size: 0.85rem;
 }
 
 nav a:hover {
     background: var(--gray-light);
+}
+
+nav a.active {
+    background: var(--primary);
+    color: white !important;
 }
 
 .nav-btn {
@@ -823,6 +866,172 @@ nav a:hover {
     color: #ffd700;
 }
 
+/* ==================== NOVOS ESTILOS PARA AVALIAÇÃO ==================== */
+.optional-section {
+    background: var(--light);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin: 1.5rem 0;
+    border-left: 4px solid var(--primary);
+}
+
+.optional-section h4 {
+    color: var(--dark);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.optional-section h4 i {
+    color: var(--primary);
+}
+
+.ambient-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.ambient-option {
+    padding: 12px;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.ambient-option:hover {
+    border-color: var(--primary);
+}
+
+.ambient-option.selected {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+.benefit-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: white;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.benefit-checkbox:hover {
+    border-color: var(--primary);
+}
+
+.benefit-checkbox.selected {
+    border-color: var(--success);
+    background: #f0fdf4;
+}
+
+.custom-benefit-input {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.custom-benefit-input input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+}
+
+.custom-benefit-input button {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.custom-benefit-input button:hover {
+    background: var(--primary-dark);
+}
+
+.salary-range {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.salary-range input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+}
+
+.salary-range select {
+    padding: 10px;
+    border: 2px solid var(--gray-light);
+    border-radius: var(--radius);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+}
+
+.custom-benefits-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.custom-benefit-tag {
+    background: var(--primary);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.custom-benefit-tag button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-benefit-tag button:hover {
+    opacity: 0.8;
+}
+
 /* ==================== FOOTER ==================== */
 footer {
     background: var(--dark);
@@ -1107,6 +1316,25 @@ footer {
     .detalhes-funcionamento {
         padding: 2rem 1.5rem;
     }
+    
+    /* Responsivo para novos estilos de avaliação */
+    .ambient-options,
+    .benefits-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    }
+    
+    .custom-benefit-input {
+        flex-direction: column;
+    }
+    
+    .custom-benefit-input button {
+        width: 100%;
+    }
+    
+    .salary-range {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1151,5 +1379,27 @@ footer {
     
     .como-funciona-section .section-header h2 {
         font-size: 2rem;
+    }
+    
+    .empresas-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .stat-item {
+        min-width: 100%;
+    }
+    
+    /* Responsivo para novos estilos de avaliação */
+    .optional-section {
+        padding: 1rem;
+    }
+    
+    .ambient-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .benefits-grid {
+        grid-template-columns: 1fr;
     }
 }
