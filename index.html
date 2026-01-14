@@ -515,5 +515,32 @@
             }
         });
     </script>
-</body>
+</body><!-- ========== FIREBASE CONFIG ========== -->
+<script type="module">
+  // COLE AQUI SUAS CHAVES do Passo 1.3
+  const firebaseConfig = {
+    apiKey: "AIzaSyCikJ1Cf_AS8tfKgythZdUqeyUAc96z7Eg",
+    authDomain: "reputai143.firebaseapp.com",
+    projectId: "reputai143",
+    storageBucket: "reputai143.appspot.com",
+    messagingSenderId: "127119539085",
+    appId: "1:127119539085:web:325373bf1da5a16b5c9bc4"
+  };
+
+  // Importar e inicializar Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  
+  // Testar conexão (opcional)
+  console.log("Firebase conectado! Banco:", db);
+  
+  // Deixa db disponível globalmente (para usar em outros scripts)
+  window.firebaseDb = db;
+  window.firebaseApp = app;
+</script>
+<!-- ==================================== -->
+
 </html>
