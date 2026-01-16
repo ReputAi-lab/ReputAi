@@ -1,22 +1,102 @@
-// script.js - Configuração principal ATUALIZADA
-let currentUser = null;
+// script.js - Sistema principal do ReputAí
+console.log('🚀 [script] Sistema principal carregando...');
+
+// ==================== VARIÁVEIS GLOBAIS ====================
 let userLocation = null;
 let locationPermission = false;
 let typingInterval = null;
 let map = null;
 let companies = [];
 let evaluationData = null;
+let selectedAmbient = null;
+let selectedBenefits = [];
+let customBenefits = [];
+let salaryAmount = '';
+let salaryPeriod = 'mensal';
 
-// ==================== HEADER SCROLL ====================
-function initHeaderScroll() {
-    window.addEventListener('scroll', function() {
-        const header = document.querySelector('header');
-        if (window.scrollY > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
+// ==================== FUNÇÕES DE UTILIDADE ====================
+function showToast(message, type = 'info') {
+    console.log(`📢 Toast [${type}]: ${message}`);
+    
+    const toast = document.getElementById('toast');
+    if (!toast) {
+        console.warn('⚠️ Elemento toast não encontrado');
+        return;
+    }
+    
+    const icons = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        info: 'fas fa-info-circle',
+        warning: 'fas fa-exclamation-triangle'
+    };
+    
+    const colors = {
+        success: '#10b981',
+        error: '#dc2626',
+        info: '#3b82f6',
+        warning: '#f59e0b'
+    };
+    
+    toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
+    toast.style.background = colors[type] || colors.info;
+    toast.className = 'toast show';
+    
+    setTimeout(() => {
+        toast.className = 'toast';
+    }, 3000);
+}
+
+function showModal(content) {
+    closeModal();
+    
+    const modal = document.createElement('div');
+    modal.id = 'custom-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content" style="position: relative;">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            ${content}
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    setTimeout(() => modal.classList.add('active'), 10);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+    
+    document.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', escHandler);
         }
     });
+}
+
+function closeModal() {
+    const modal = document.getElementById('custom-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+function scrollToElement(selector) {
+    const element = document.querySelector(selector);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function scrollToTop(e) {
+    if (e) e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ==================== ANIMAÇÃO DE DIGITAÇÃO ====================
@@ -27,7 +107,9 @@ function initTypingEffect() {
     const phrases = [
         "o melhor lugar",
         "a equipe ideal", 
-        "a melhor empresa"
+        "a melhor empresa",
+        "a cultura ideal",
+        "o ambiente perfeito"
     ];
     
     let phraseIndex = 0;
@@ -64,32 +146,46 @@ function initTypingEffect() {
         typingInterval = setTimeout(type, speed);
     }
     
-    if (typingInterval) {
-        clearTimeout(typingInterval);
-    }
-    
+    if (typingInterval) clearTimeout(typingInterval);
     typingInterval = setTimeout(type, 1000);
 }
 
 // ==================== MAPA ====================
 function initMap() {
-    if (document.getElementById('map')) {
+    if (!document.getElementById('map')) return;
+    
+    try {
         map = L.map('map').setView([-15.7801, -47.9292], 4);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
         
+        console.log('🗺️ Mapa inicializado com sucesso');
+        
+        // Adicionar empresas se existirem
         if (companies.length > 0) {
             addCompaniesToMap(companies);
         }
+    } catch (error) {
+        console.error('❌ Erro ao inicializar mapa:', error);
+        document.getElementById('map').innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: var(--gray-light); border-radius: var(--radius);">
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-map-marked-alt" style="font-size: 3rem; color: var(--gray); margin-bottom: 1rem;"></i>
+                    <h3>Mapa indisponível</h3>
+                    <p>O mapa não pôde ser carregado. Verifique sua conexão.</p>
+                </div>
+            </div>
+        `;
     }
 }
 
 function addCompaniesToMap(companiesArray) {
-    if (!map) return;
+    if (!map || !companiesArray || companiesArray.length === 0) return;
     
-    // Limpar marcadores existentes
+    // Limpar marcadores anteriores
     map.eachLayer(layer => {
         if (layer instanceof L.Marker) {
             map.removeLayer(layer);
@@ -98,34 +194,40 @@ function addCompaniesToMap(companiesArray) {
     
     companiesArray.forEach(company => {
         if (company.lat && company.lng) {
-            L.marker([company.lat, company.lng])
+            const marker = L.marker([company.lat, company.lng])
                 .addTo(map)
                 .bindPopup(`
-                    <div style="min-width: 200px;">
-                        <b>${company.name}</b><br>
-                        <small>${company.location}</small><br>
-                        <div style="color: #FFD700; margin: 5px 0;">
+                    <div style="min-width: 250px;" class="company-marker-popup">
+                        <h4 style="margin: 0 0 10px 0; color: var(--dark);">${company.name}</h4>
+                        <p style="margin: 5px 0; color: var(--gray);">
+                            <i class="fas fa-map-marker-alt"></i> ${company.location}
+                        </p>
+                        <div style="color: #FFD700; margin: 10px 0; font-size: 16px;">
                             ${'★'.repeat(Math.floor(company.averageRating))}
                             ${'☆'.repeat(5 - Math.floor(company.averageRating))}
                         </div>
-                        <small>${company.averageRating.toFixed(1)}/5 (${company.reviewCount} avaliações)</small>
-                        <br>
-                        <button onclick="showCompanyDetailsFromMap(${company.id})" style="margin-top: 10px; background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                            Ver Detalhes
+                        <p style="margin: 5px 0; color: var(--gray);">
+                            ${company.averageRating.toFixed(1)}/5 (${company.reviewCount} avaliações)
+                        </p>
+                        <p style="margin: 5px 0; color: var(--gray);">
+                            <i class="fas fa-industry"></i> ${company.sector}
+                        </p>
+                        <button onclick="showCompanyDetails(${company.id}); return false;" 
+                                style="width: 100%; margin-top: 10px; padding: 8px; background: var(--primary); 
+                                       color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-info-circle"></i> Ver Detalhes
                         </button>
                     </div>
                 `);
         }
     });
-}
-
-function showCompanyDetailsFromMap(companyId) {
-    showCompanyDetails(companyId);
+    
+    console.log(`📍 ${companiesArray.length} empresas adicionadas ao mapa`);
 }
 
 function locateUser() {
     if (!navigator.geolocation) {
-        showToast('Geolocalização não suportada', 'error');
+        showToast('Geolocalização não suportada neste navegador', 'error');
         return;
     }
     
@@ -134,7 +236,7 @@ function locateUser() {
         return;
     }
     
-    showToast('Obtendo localização...', 'info');
+    showToast('Obtendo sua localização...', 'info');
     
     navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -146,27 +248,59 @@ function locateUser() {
             if (map) {
                 map.setView([userLocation.lat, userLocation.lng], 14);
                 
+                // Adicionar marcador do usuário
                 L.marker([userLocation.lat, userLocation.lng], {
                     icon: L.divIcon({
                         className: 'user-location-marker',
                         html: '<div style="background: #2563eb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>'
                     })
-                }).addTo(map).bindPopup('Você está aqui!');
+                }).addTo(map).bindPopup('Você está aqui!').openPopup();
+                
+                // Buscar empresas próximas
+                findNearbyCompanies(userLocation.lat, userLocation.lng);
             }
             
             updateLocationStatus('Localização ativa', true);
             showToast('Localização encontrada!', 'success');
-            
-            if (typeof getUserLocationName === 'function') {
-                getUserLocationName(userLocation.lat, userLocation.lng);
-            }
         },
         (error) => {
             console.error('Erro na geolocalização:', error);
-            showToast('Erro ao obter localização', 'error');
+            showToast('Não foi possível obter sua localização', 'error');
             updateLocationStatus('Clique para ativar', false);
+        },
+        { 
+            enableHighAccuracy: true, 
+            timeout: 10000,
+            maximumAge: 0
         }
     );
+}
+
+function findNearbyCompanies(lat, lng, radiusKm = 50) {
+    if (!companies || companies.length === 0) return [];
+    
+    const nearbyCompanies = companies.filter(company => {
+        if (!company.lat || !company.lng) return false;
+        
+        const R = 6371; // Raio da Terra em km
+        const dLat = (company.lat - lat) * Math.PI / 180;
+        const dLon = (company.lng - lng) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat * Math.PI / 180) * Math.cos(company.lat * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = R * c;
+        
+        return distance <= radiusKm;
+    });
+    
+    if (nearbyCompanies.length > 0) {
+        showToast(`Encontradas ${nearbyCompanies.length} empresas próximas`, 'success');
+        displayCompanies(nearbyCompanies.slice(0, 8));
+    }
+    
+    return nearbyCompanies;
 }
 
 function resetMapView() {
@@ -176,73 +310,104 @@ function resetMapView() {
     }
 }
 
+function requestLocationPermission() {
+    if (!navigator.geolocation) {
+        showToast('Seu navegador não suporta geolocalização', 'error');
+        return;
+    }
+    
+    showToast('Solicitando permissão de localização...', 'info');
+    
+    navigator.geolocation.getCurrentPosition(
+        () => {
+            locationPermission = true;
+            setStorageItem('reputai_location_permission', 'granted');
+            showToast('Permissão concedida!', 'success');
+            updateLocationStatus('Localização ativa', true);
+            locateUser();
+        },
+        (error) => {
+            console.error('Permissão negada:', error);
+            locationPermission = false;
+            setStorageItem('reputai_location_permission', 'denied');
+            showToast('Permissão de localização negada', 'error');
+            updateLocationStatus('Permissão negada', false);
+        },
+        { enableHighAccuracy: false }
+    );
+}
+
+function updateLocationStatus(message, isActive) {
+    const statusElement = document.getElementById('location-text');
+    if (statusElement) {
+        statusElement.innerHTML = `
+            <i class="fas fa-${isActive ? 'check-circle' : 'map-marker-alt'}" 
+               style="color: ${isActive ? 'var(--success)' : 'var(--gray)'}"></i>
+            ${message}
+        `;
+        
+        const btn = document.querySelector('.btn-location');
+        if (btn) {
+            btn.innerHTML = isActive ? 
+                '<i class="fas fa-sync-alt"></i> Atualizar' : 
+                '<i class="fas fa-crosshairs"></i> Ativar';
+            btn.onclick = isActive ? locateUser : requestLocationPermission;
+        }
+    }
+}
+
 // ==================== EMPRESAS ====================
 function loadCompanies() {
-    const savedCompanies = localStorage.getItem('reputai_companies');
+    const savedCompanies = getStorageItem('reputai_companies');
     
-    if (savedCompanies) {
-        companies = JSON.parse(savedCompanies);
+    if (savedCompanies && savedCompanies.length > 0) {
+        companies = savedCompanies;
+        console.log(`🏢 ${companies.length} empresas carregadas do storage`);
     } else {
+        // Empresas padrão (sem avaliações)
         companies = [
             {
-                id: 1,
-                name: "Magazine Luiza",
-                sector: "Varejo",
-                location: "São Paulo, SP",
-                lat: -23.5505,
-                lng: -46.6333,
-                description: "Rede varejista brasileira",
-                averageRating: 4.2,
-                reviewCount: 1245
+                id: 1, name: "Magazine Luiza", sector: "Varejo", location: "São Paulo, SP",
+                lat: -23.5505, lng: -46.6333, averageRating: 0, reviewCount: 0,
+                description: "Uma das maiores redes varejistas do Brasil",
+                dataCadastro: new Date().toISOString()
             },
             {
-                id: 2,
-                name: "Itaú Unibanco",
-                sector: "Finanças",
-                location: "São Paulo, SP",
-                lat: -23.5500,
-                lng: -46.6390,
-                description: "Maior banco privado do Brasil",
-                averageRating: 3.9,
-                reviewCount: 2341
+                id: 2, name: "Itaú Unibanco", sector: "Finanças", location: "São Paulo, SP",
+                lat: -23.5500, lng: -46.6390, averageRating: 0, reviewCount: 0,
+                description: "Maior banco privado da América Latina",
+                dataCadastro: new Date().toISOString()
             },
             {
-                id: 3,
-                name: "Nubank",
-                sector: "Finanças",
-                location: "São Paulo, SP",
-                lat: -23.5489,
-                lng: -46.6388,
-                description: "Fintech brasileira",
-                averageRating: 4.5,
-                reviewCount: 1890
-            },
-            {
-                id: 4,
-                name: "Petrobras",
-                sector: "Energia",
-                location: "Rio de Janeiro, RJ",
-                lat: -22.9068,
-                lng: -43.1729,
-                description: "Empresa estatal de petróleo",
-                averageRating: 3.2,
-                reviewCount: 3120
+                id: 3, name: "McDonald's", sector: "Alimentação", location: "São Paulo, SP",
+                lat: -23.5631, lng: -46.6560, averageRating: 0, reviewCount: 0,
+                description: "Rede mundial de fast food",
+                dataCadastro: new Date().toISOString()
             }
         ];
         
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
+        setStorageItem('reputai_companies', companies);
+        console.log(`🏢 ${companies.length} empresas padrão criadas`);
     }
+    
+    // Zerar avaliações existentes
+    companies.forEach(company => {
+        company.averageRating = 0;
+        company.reviewCount = 0;
+    });
     
     window.companies = companies;
     return companies;
 }
 
-// Função para carregar apenas algumas empresas na home
 function loadHomeCompanies() {
     const allCompanies = loadCompanies();
-    // Mostrar apenas as primeiras 4 empresas na home
-    const homeCompanies = allCompanies.slice(0, 4);
+    const homeCompanies = allCompanies.slice(0, 6);
     displayCompanies(homeCompanies);
+    
+    if (map) {
+        addCompaniesToMap(homeCompanies);
+    }
 }
 
 function displayCompanies(companiesToShow) {
@@ -272,10 +437,12 @@ function displayCompanies(companiesToShow) {
             <div class="company-body">
                 <div class="company-rating">
                     <div class="stars">
-                        ${'★'.repeat(Math.floor(company.averageRating))}
-                        ${'☆'.repeat(5 - Math.floor(company.averageRating))}
+                        ${company.reviewCount > 0 ? 
+                            '★'.repeat(Math.floor(company.averageRating)) + 
+                            '☆'.repeat(5 - Math.floor(company.averageRating)) : 
+                            'Sem avaliações'}
                     </div>
-                    <span>${company.averageRating.toFixed(1)}/5 (${company.reviewCount})</span>
+                    <span>${company.reviewCount > 0 ? company.averageRating.toFixed(1) + '/5' : 'Avaliar'} (${company.reviewCount})</span>
                 </div>
                 
                 <p>${company.description || 'Empresa cadastrada na plataforma ReputAí'}</p>
@@ -283,6 +450,7 @@ function displayCompanies(companiesToShow) {
                 <div class="company-tags">
                     <span class="tag">${company.sector}</span>
                     <span class="tag">${company.reviewCount} avaliações</span>
+                    ${company.dataCadastro ? `<span class="tag">Cadastrada em ${new Date(company.dataCadastro).toLocaleDateString('pt-BR')}</span>` : ''}
                 </div>
             </div>
         </div>
@@ -290,11 +458,10 @@ function displayCompanies(companiesToShow) {
 }
 
 function searchCompanies() {
-    const searchTerm = document.getElementById('search-company').value.toLowerCase().trim();
+    const searchTerm = document.getElementById('search-company')?.value.toLowerCase().trim();
     
     if (!searchTerm) {
         loadHomeCompanies();
-        if (map) addCompaniesToMap(companies.slice(0, 4));
         return;
     }
     
@@ -331,254 +498,20 @@ function filterBySector(sector) {
     showToast(`Filtrado por: ${sector}`, 'info');
 }
 
-// ==================== SISTEMA DE AVALIAÇÃO COM AVISO ====================
-function verificarAvaliacao() {
-    const companyName = document.getElementById('evaluate-company').value.trim();
-    const rating = document.querySelector('input[name="rating"]:checked');
-    const text = document.getElementById('evaluation-text').value.trim();
-    const sector = document.getElementById('evaluate-sector').value;
-    const location = document.getElementById('evaluate-location').value.trim();
-    
-    if (!currentUser) {
-        showToast('Faça login para avaliar', 'info');
-        if (typeof showAuthModal === 'function') showAuthModal();
-        return;
-    }
-    
-    if (!companyName || !rating || !text) {
-        showToast('Preencha todos os campos obrigatórios', 'error');
-        return;
-    }
-    
-    if (text.length < 50) {
-        showToast('A avaliação deve ter pelo menos 50 caracteres', 'error');
-        return;
-    }
-    
-    evaluationData = {
-        companyName,
-        rating: parseInt(rating.value),
-        text,
-        sector: sector || "Outros",
-        location: location || "Brasil"
-    };
-    
-    showAvisoModal();
-}
-
-function showAvisoModal() {
-    const modal = document.getElementById('aviso-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
-        
-        document.getElementById('concordar-avisos').checked = false;
-        document.getElementById('prosseguir-avaliacao').disabled = true;
-        
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) hideAvisoModal();
-        });
-        
-        document.addEventListener('keydown', function escHandler(e) {
-            if (e.key === 'Escape') {
-                hideAvisoModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        });
-    }
-}
-
-function hideAvisoModal() {
-    const modal = document.getElementById('aviso-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
-    }
-}
-
-function prosseguirAvaliacao() {
-    if (!evaluationData) {
-        showToast('Erro: Dados da avaliação não encontrados', 'error');
-        return;
-    }
-    
-    hideAvisoModal();
-    submitEvaluation(evaluationData);
-}
-
-function submitEvaluation(evalData) {
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const existingCompany = companies.find(c => 
-        c.name.toLowerCase() === evalData.companyName.toLowerCase()
-    );
-    
-    let companyId;
-    if (existingCompany) {
-        companyId = existingCompany.id;
-    } else {
-        companyId = companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1;
-        const newCompany = {
-            id: companyId,
-            name: evalData.companyName,
-            sector: evalData.sector,
-            location: evalData.location,
-            lat: -15 + (Math.random() - 0.5) * 20,
-            lng: -50 + (Math.random() - 0.5) * 20,
-            description: `Empresa cadastrada através de avaliação - Setor: ${evalData.sector}`,
-            averageRating: evalData.rating,
-            reviewCount: 1,
-            cadastradaPor: currentUser.id,
-            dataCadastro: new Date().toISOString()
-        };
-        companies.push(newCompany);
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
-        
-        showToast(`Empresa "${evalData.companyName}" cadastrada automaticamente!`, 'success');
-    }
-    
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const newEvaluation = {
-        id: evaluations.length > 0 ? Math.max(...evaluations.map(e => e.id)) + 1 : 1,
-        companyId: companyId,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        rating: evalData.rating,
-        text: evalData.text,
-        date: new Date().toISOString(),
-        avisoAceito: true,
-        termosAceitosEm: new Date().toISOString()
-    };
-    
-    evaluations.push(newEvaluation);
-    localStorage.setItem('reputai_evaluations', JSON.stringify(evaluations));
-    
-    const companyIndex = companies.findIndex(c => c.id === companyId);
-    if (companyIndex !== -1) {
-        const companyEvals = evaluations.filter(e => e.companyId === companyId);
-        const totalRating = companyEvals.reduce((sum, eval) => sum + eval.rating, 0);
-        companies[companyIndex].averageRating = totalRating / companyEvals.length;
-        companies[companyIndex].reviewCount = companyEvals.length;
-        
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
-    }
-    
-    showToast('Avaliação enviada com sucesso!', 'success');
-    
-    // Limpar formulário apenas se estiver na home
-    const evaluateCompanyInput = document.getElementById('evaluate-company');
-    const evaluationTextInput = document.getElementById('evaluation-text');
-    
-    if (evaluateCompanyInput) evaluateCompanyInput.value = '';
-    if (evaluationTextInput) evaluationTextInput.value = '';
-    
-    // Limpar outros campos se existirem
-    const evaluateSector = document.getElementById('evaluate-sector');
-    const evaluateLocation = document.getElementById('evaluate-location');
-    if (evaluateSector) evaluateSector.value = '';
-    if (evaluateLocation) evaluateLocation.value = '';
-    
-    // Limpar estrelas
-    document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
-    
-    evaluationData = null;
-    
-    // Atualizar display na home
-    if (typeof loadHomeCompanies === 'function') {
-        loadHomeCompanies();
-    }
-    
-    if (map) {
-        const updatedCompanies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-        addCompaniesToMap(updatedCompanies.slice(0, 4));
-        
-        const newCompany = updatedCompanies.find(c => c.id === companyId);
-        if (newCompany && newCompany.lat && newCompany.lng) {
-            map.setView([newCompany.lat, newCompany.lng], 12);
-        }
-    }
-}
-
-// ==================== FUNÇÕES PARA EXIBIR DETALHES ADICIONAIS ====================
-function formatAmbientStats(ambientStats) {
-    if (!ambientStats || Object.keys(ambientStats).length === 0) {
-        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre ambiente</p>';
-    }
-    
-    const total = Object.values(ambientStats).reduce((sum, count) => sum + count, 0);
-    const items = Object.entries(ambientStats).map(([ambient, count]) => {
-        const percentage = ((count / total) * 100).toFixed(0);
-        const icons = {
-            'ótimo': 'fas fa-laugh-beam',
-            'bom': 'fas fa-smile',
-            'normal': 'fas fa-meh',
-            'ruim': 'fas fa-frown'
-        };
-        
-        return `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <i class="${icons[ambient] || 'fas fa-question'}" style="color: ${getAmbientColor(ambient)};"></i>
-                <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>${ambient.charAt(0).toUpperCase() + ambient.slice(1)}</span>
-                        <span>${percentage}%</span>
-                    </div>
-                    <div style="height: 6px; background: var(--gray-light); border-radius: 3px; overflow: hidden; margin-top: 4px;">
-                        <div style="height: 100%; width: ${percentage}%; background: ${getAmbientColor(ambient)};"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    return `
-        <div style="background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 15px;">
-            <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--dark);">Ambiente de Trabalho</h5>
-            ${items}
-            <p style="font-size: 0.8rem; color: var(--gray); margin-top: 10px; margin-bottom: 0;">
-                Baseado em ${total} avaliação${total !== 1 ? 'es' : ''}
-            </p>
-        </div>
-    `;
-}
-
-function getAmbientColor(ambient) {
-    const colors = {
-        'ótimo': '#10b981',
-        'bom': '#3b82f6',
-        'normal': '#f59e0b',
-        'ruim': '#dc2626'
-    };
-    return colors[ambient] || '#64748b';
-}
-
-function formatBenefits(benefitsList) {
-    if (!benefitsList || benefitsList.length === 0) {
-        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre benefícios</p>';
-    }
-    
-    return `
-        <div style="margin-bottom: 15px;">
-            <h5 style="margin-bottom: 8px; color: var(--dark);">Benefícios Oferecidos</h5>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${benefitsList.map(benefit => `
-                    <span style="background: #dbeafe; color: #1d4ed8; padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-check-circle" style="font-size: 0.8rem;"></i>
-                        ${benefit}
-                    </span>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
 function showCompanyDetails(companyId) {
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
     const company = companies.find(c => c.id === companyId);
+    if (!company) {
+        showToast('Empresa não encontrada', 'error');
+        return;
+    }
     
-    if (!company) return;
+    const evaluations = getStorageItem('reputai_evaluations') || [];
+    const usuarioAtual = window.currentUser;
     
-    const companyEvaluations = evaluations.filter(e => e.companyId === companyId);
+    // Filtrar avaliações visíveis para este usuário
+    const companyEvaluations = evaluations
+        .filter(e => e.companyId === companyId || e.companyName === company.name)
+        .filter(e => verificarAvaliacaoVisivel(e, usuarioAtual));
     
     const modalContent = `
         <div style="max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 20px;">
@@ -593,10 +526,12 @@ function showCompanyDetails(companyId) {
                     </p>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="color: #FFD700; font-size: 20px;">
-                            ${'★'.repeat(Math.floor(company.averageRating))}
-                            ${'☆'.repeat(5 - Math.floor(company.averageRating))}
+                            ${company.reviewCount > 0 ? 
+                                '★'.repeat(Math.floor(company.averageRating)) + 
+                                '☆'.repeat(5 - Math.floor(company.averageRating)) : 
+                                'Sem avaliações'}
                         </div>
-                        <span style="font-weight: bold; color: var(--dark);">${company.averageRating.toFixed(1)}/5</span>
+                        <span style="font-weight: bold; color: var(--dark);">${company.reviewCount > 0 ? company.averageRating.toFixed(1) + '/5' : 'Avaliar'}</span>
                         <span style="color: var(--gray);">(${company.reviewCount} avaliações)</span>
                     </div>
                 </div>
@@ -612,81 +547,107 @@ function showCompanyDetails(companyId) {
                     <span style="background: var(--gray-light); padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">
                         ${company.reviewCount} avaliações
                     </span>
+                    ${company.dataCadastro ? `
+                        <span style="background: var(--gray-light); padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">
+                            <i class="fas fa-calendar"></i> ${new Date(company.dataCadastro).toLocaleDateString('pt-BR')}
+                        </span>
+                    ` : ''}
                 </div>
             </div>
             
-            <!-- Nova seção: Estatísticas de Ambiente -->
-            ${company.ambientStats ? formatAmbientStats(company.ambientStats) : ''}
-            
-            <!-- Nova seção: Benefícios -->
-            ${company.benefitsList ? formatBenefits(company.benefitsList) : ''}
-            
-            <div style="margin-top: 20px;">
+            <div>
                 <h4 style="color: var(--dark); margin-bottom: 15px;">
                     Avaliações (${companyEvaluations.length})
+                    <small style="color: var(--gray); font-weight: normal;">
+                        - Baseadas exclusivamente em avaliações do ReputAí
+                    </small>
                 </h4>
                 ${companyEvaluations.length > 0 ? 
                     `<div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
-                        ${companyEvaluations.map(eval => `
-                            <div style="background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <strong style="color: var(--dark);">${eval.userName}</strong>
-                                    <div style="color: #FFD700;">
-                                        ${'★'.repeat(eval.rating)}${'☆'.repeat(5 - eval.rating)}
+                        ${companyEvaluations.map(eval => {
+                            const isRemovida = eval.removida;
+                            const isDenunciada = eval.denunciada;
+                            const isOfensiva = verificarConteudoOfensivo(eval.text);
+                            
+                            let statusBadge = '';
+                            if (isRemovida) {
+                                statusBadge = '<span style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px;">REMOVIDA</span>';
+                            } else if (isDenunciada) {
+                                statusBadge = '<span style="background: #f59e0b; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px;">DENUNCIADA</span>';
+                            } else if (isOfensiva) {
+                                statusBadge = '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px;">CONTEÚDO INAPROPRIADO</span>';
+                            }
+                            
+                            return `
+                                <div style="background: ${isRemovida || isDenunciada ? '#fef2f2' : 'var(--light)'}; 
+                                        padding: 15px; border-radius: var(--radius); margin-bottom: 10px;
+                                        border-left: 4px solid ${isRemovida ? '#dc2626' : isDenunciada ? '#f59e0b' : isOfensiva ? '#ef4444' : '#3b82f6'};">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <strong style="color: var(--dark);">
+                                            ${eval.anonima ? 'Usuário Anônimo' : eval.userName}
+                                            ${eval.userId === usuarioAtual?.id ? '<span style="color: #3b82f6; font-size: 0.8rem;"> (Você)</span>' : ''}
+                                        </strong>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            ${statusBadge}
+                                            <div style="color: #FFD700;">
+                                                ${'★'.repeat(eval.rating)}${'☆'.repeat(5 - eval.rating)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p style="color: var(--text); margin-bottom: 8px; font-size: 0.95rem;">
+                                        ${isRemovida || isDenunciada ? 
+                                            '<i class="fas fa-eye-slash"></i> Esta avaliação foi ocultada por violar nossos termos de uso.' : 
+                                            eval.text}
+                                    </p>
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <small style="color: var(--gray);">
+                                            ${new Date(eval.date).toLocaleDateString('pt-BR')}
+                                            ${eval.avisoAceito ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: 5px;"></i>' : ''}
+                                            ${eval.anonima ? '<i class="fas fa-user-secret" style="color: #64748b; margin-left: 5px;"></i>' : ''}
+                                        </small>
+                                        ${!usuarioAtual?.isAdmin && usuarioAtual?.id !== eval.userId && !isRemovida && !isDenunciada ? `
+                                            <button onclick="denunciarAvaliacao(${eval.id})" style="background: none; border: none; color: #dc2626; cursor: pointer; font-size: 0.8rem;">
+                                                <i class="fas fa-flag"></i> Denunciar
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 </div>
-                                <p style="color: var(--text); margin-bottom: 8px; font-size: 0.95rem;">${eval.text}</p>
-                                
-                                <!-- Exibir dados opcionais da avaliação -->
-                                ${eval.ambient ? `
-                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-                                        <i class="fas fa-users" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                        <span style="color: var(--gray); font-size: 0.9rem;">Ambiente: ${eval.ambient}</span>
-                                    </div>
-                                ` : ''}
-                                
-                                ${eval.benefits && eval.benefits.length > 0 ? `
-                                    <div style="margin-bottom: 5px;">
-                                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px;">
-                                            <i class="fas fa-gift" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                            <span style="color: var(--gray); font-size: 0.9rem;">Benefícios:</span>
-                                        </div>
-                                        <div style="display: flex; flex-wrap: wrap; gap: 5px; font-size: 0.85rem;">
-                                            ${eval.benefits.map(benefit => `
-                                                <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 10px;">
-                                                    ${benefit}
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                ${eval.salary ? `
-                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-                                        <i class="fas fa-money-bill-wave" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                        <span style="color: var(--gray); font-size: 0.9rem;">
-                                            Salário: R$ ${eval.salary.amount} ${eval.salary.period === 'mensal' ? '/mês' : '/ano'}
-                                        </span>
-                                    </div>
-                                ` : ''}
-                                
-                                <small style="color: var(--gray);">
-                                    ${new Date(eval.date).toLocaleDateString('pt-BR')}
-                                    ${eval.avisoAceito ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: 5px;"></i>' : ''}
-                                </small>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>` :
                     `<p style="text-align: center; color: var(--gray); padding: 20px;">
+                        <i class="fas fa-star" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
                         Nenhuma avaliação disponível. Seja o primeiro a avaliar!
+                        <br><small>Apenas avaliações feitas no ReputAí são exibidas.</small>
                     </p>`
                 }
             </div>
+            
+            ${company.respostaEmpresa ? `
+                <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: var(--radius); border-left: 4px solid #0ea5e9;">
+                    <h5 style="color: #0ea5e9; margin-bottom: 10px;">
+                        <i class="fas fa-building"></i> Resposta da Empresa
+                    </h5>
+                    <p style="color: var(--dark);">${company.respostaEmpresa}</p>
+                    <small style="color: var(--gray);">
+                        Respondido em ${new Date(company.respostaData).toLocaleDateString('pt-BR')}
+                    </small>
+                </div>
+            ` : ''}
             
             <div style="margin-top: 20px; text-align: center;">
                 <button onclick="closeModal()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
                     Fechar
                 </button>
+                ${window.currentUser ? `
+                    <button onclick="window.location.href='avaliacao.html'; closeModal();" style="background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500; margin-left: 10px;">
+                        <i class="fas fa-star"></i> Avaliar esta empresa
+                    </button>
+                ` : `
+                    <button onclick="showAuthModal(); closeModal();" style="background: var(--warning); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500; margin-left: 10px;">
+                        <i class="fas fa-sign-in-alt"></i> Entrar para Avaliar
+                    </button>
+                `}
             </div>
         </div>
     `;
@@ -694,260 +655,613 @@ function showCompanyDetails(companyId) {
     showModal(modalContent);
 }
 
-// ==================== COMO FUNCIONA SECTION ====================
-function initComoFuncionaSection() {
-    const passos = document.querySelectorAll('.passo-card');
-    const detalhes = document.querySelectorAll('.detalhe-item');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    });
-    
-    passos.forEach((passo, index) => {
-        passo.style.opacity = '0';
-        passo.style.transform = 'translateY(20px)';
-        passo.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        passo.style.transitionDelay = `${index * 0.2}s`;
-        observer.observe(passo);
-    });
-    
-    detalhes.forEach((detalhe, index) => {
-        detalhe.style.opacity = '0';
-        detalhe.style.transform = 'translateY(20px)';
-        detalhe.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        detalhe.style.transitionDelay = `${index * 0.1}s`;
-        observer.observe(detalhe);
-    });
-}
-
-function scrollToComoFunciona() {
-    const section = document.getElementById('como-funciona');
-    if (section) {
-        section.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-        });
-        
-        section.style.animation = 'highlight 2s ease';
-        
-        setTimeout(() => {
-            section.style.animation = '';
-        }, 2000);
-    }
-}
-
-// Adicionar estilo CSS para highlight
-const highlightStyle = document.createElement('style');
-highlightStyle.textContent = `
-    @keyframes highlight {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(37, 99, 235, 0.1); }
-        100% { background-color: transparent; }
-    }
-    
-    #como-funciona {
-        scroll-margin-top: 80px;
-    }
-`;
-document.head.appendChild(highlightStyle);
-
-// ==================== MODAL GENERICO ====================
-function showModal(content) {
-    // Fechar modal existente
-    closeModal();
-    
-    const modal = document.createElement('div');
-    modal.id = 'custom-modal';
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            ${content}
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    setTimeout(() => modal.classList.add('active'), 10);
-    
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-    
-    document.addEventListener('keydown', function escHandler(e) {
-        if (e.key === 'Escape') {
-            closeModal();
-            document.removeEventListener('keydown', escHandler);
-        }
-    });
-}
-
-function closeModal() {
-    const modal = document.getElementById('custom-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-}
-
-// ==================== UTILITÁRIOS ====================
-function scrollToElement(selector) {
-    const element = document.querySelector(selector);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-function scrollToTop(e) {
-    if (e) e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
-    
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        info: 'fas fa-info-circle'
-    };
-    
-    const colors = {
-        success: '#10b981',
-        error: '#dc2626',
-        info: '#3b82f6'
-    };
-    
-    toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
-    toast.style.background = colors[type] || colors.info;
-    toast.className = 'toast show';
-    
-    setTimeout(() => {
-        toast.className = 'toast';
-    }, 3000);
-}
-
-function requestLocationPermission() {
-    if (!navigator.geolocation) {
-        showToast('Geolocalização não suportada', 'error');
+// ==================== FUNÇÃO DE DENÚNCIA ====================
+function denunciarAvaliacao(avaliacaoId) {
+    if (!window.currentUser) {
+        showToast('Faça login para denunciar uma avaliação', 'info');
+        showAuthModal();
         return;
     }
     
-    showToast('Solicitando permissão...', 'info');
+    const avaliacoes = getStorageItem('reputai_evaluations') || [];
+    const avaliacao = avaliacoes.find(a => a.id === avaliacaoId);
     
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            locationPermission = true;
-            localStorage.setItem('reputai_location_permission', 'granted');
-            showToast('Localização ativada!', 'success');
-            updateLocationStatus('Localização ativa', true);
-            locateUser();
-        },
-        (error) => {
-            console.error('Erro na permissão:', error);
-            locationPermission = false;
-            localStorage.setItem('reputai_location_permission', 'denied');
-            showToast('Permissão negada', 'error');
-            updateLocationStatus('Clique para ativar', false);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
+    if (!avaliacao) {
+        showToast('Avaliação não encontrada', 'error');
+        return;
+    }
+    
+    // Verificar se já denunciou
+    const denuncias = getStorageItem('reputai_denuncias') || [];
+    const jaDenunciou = denuncias.some(d => 
+        d.avaliacaoId === avaliacaoId && d.usuarioDenunciante === window.currentUser.id
     );
+    
+    if (jaDenunciou) {
+        showToast('Você já denunciou esta avaliação', 'info');
+        return;
+    }
+    
+    // Modal para selecionar motivo
+    const modalContent = `
+        <div style="max-width: 500px; padding: 20px;">
+            <h3 style="color: var(--dark); margin-bottom: 1rem;">
+                <i class="fas fa-flag"></i> Denunciar Avaliação
+            </h3>
+            
+            <p style="color: var(--gray); margin-bottom: 1.5rem;">
+                Selecione o motivo da denúncia para a avaliação de <strong>${avaliacao.userName}</strong> na empresa <strong>${avaliacao.companyName}</strong>:
+            </p>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 10px;">
+                    <input type="radio" id="motivo-ofensivo" name="motivo" value="conteudo_ofensivo" checked>
+                    <label for="motivo-ofensivo" style="margin-left: 8px; cursor: pointer;">
+                        Conteúdo ofensivo ou difamatório
+                    </label>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <input type="radio" id="motivo-falso" name="motivo" value="informacao_falsa">
+                    <label for="motivo-falso" style="margin-left: 8px; cursor: pointer;">
+                        Informação falsa ou enganosa
+                    </label>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <input type="radio" id="motivo-conflito" name="motivo" value="conflito_interesse">
+                    <label for="motivo-conflito" style="margin-left: 8px; cursor: pointer;">
+                        Conflito de interesse ou spam
+                    </label>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <input type="radio" id="motivo-outro" name="motivo" value="outro">
+                    <label for="motivo-outro" style="margin-left: 8px; cursor: pointer;">
+                        Outro motivo
+                    </label>
+                </div>
+                
+                <div id="outro-motivo-container" style="display: none; margin-top: 10px;">
+                    <textarea id="outro-motivo" placeholder="Descreva o motivo da denúncia..." style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius); font-family: 'Inter', sans-serif;" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                <button onclick="closeModal()" style="flex: 1; background: var(--gray-light); color: var(--dark); border: none; padding: 10px; border-radius: var(--radius); cursor: pointer;">
+                    Cancelar
+                </button>
+                <button onclick="enviarDenuncia(${avaliacaoId})" style="flex: 1; background: var(--danger); color: white; border: none; padding: 10px; border-radius: var(--radius); cursor: pointer;">
+                    <i class="fas fa-paper-plane"></i> Enviar Denúncia
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal(modalContent);
+    
+    // Mostrar campo de texto para "outro motivo"
+    const radioOutro = document.getElementById('motivo-outro');
+    const containerOutro = document.getElementById('outro-motivo-container');
+    
+    if (radioOutro && containerOutro) {
+        radioOutro.addEventListener('change', function() {
+            containerOutro.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        document.querySelectorAll('input[name="motivo"]').forEach(radio => {
+            if (radio.id !== 'motivo-outro') {
+                radio.addEventListener('change', function() {
+                    containerOutro.style.display = 'none';
+                });
+            }
+        });
+    }
 }
 
-function updateLocationStatus(message, isActive) {
-    const statusElement = document.getElementById('location-text');
-    if (statusElement) {
-        statusElement.innerHTML = `
-            <i class="fas fa-${isActive ? 'check-circle' : 'map-marker-alt'}" 
-               style="color: ${isActive ? 'var(--success)' : 'var(--gray)'}"></i>
-            ${message}
-        `;
+function enviarDenuncia(avaliacaoId) {
+    const motivoSelecionado = document.querySelector('input[name="motivo"]:checked');
+    if (!motivoSelecionado) {
+        showToast('Selecione um motivo para a denúncia', 'error');
+        return;
+    }
+    
+    let motivo = motivoSelecionado.value;
+    if (motivo === 'outro') {
+        const outroMotivo = document.getElementById('outro-motivo')?.value.trim();
+        if (!outroMotivo) {
+            showToast('Descreva o motivo da denúncia', 'error');
+            return;
+        }
+        motivo = `Outro: ${outroMotivo}`;
+    }
+    
+    // Adicionar denúncia
+    const denuncias = getStorageItem('reputai_denuncias') || [];
+    const avaliacoes = getStorageItem('reputai_evaluations') || [];
+    const avaliacao = avaliacoes.find(a => a.id === avaliacaoId);
+    
+    if (avaliacao) {
+        denuncias.push({
+            id: Date.now(),
+            avaliacaoId: avaliacaoId,
+            empresa: avaliacao.companyName,
+            usuario: avaliacao.userName,
+            usuarioId: avaliacao.userId,
+            usuarioDenunciante: window.currentUser.id,
+            motivo: motivo,
+            data: new Date().toISOString(),
+            status: 'pendente'
+        });
         
-        const btn = document.querySelector('.btn-location');
-        if (btn) {
-            if (isActive) {
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
-                btn.onclick = locateUser;
-            } else {
-                btn.innerHTML = '<i class="fas fa-crosshairs"></i> Ativar';
-                btn.onclick = requestLocationPermission;
-            }
+        setStorageItem('reputai_denuncias', denuncias);
+        
+        // Marcar avaliação como denunciada
+        marcarAvaliacaoComoDenunciada(avaliacaoId);
+        
+        closeModal();
+        showToast('✅ Denúncia enviada com sucesso! A avaliação será analisada.', 'success');
+        
+        // Atualizar contador de denúncias se for admin
+        if (window.currentUser?.isAdmin) {
+            updateDenunciasCount();
         }
     }
 }
 
-function checkLocationPermission() {
-    const permission = localStorage.getItem('reputai_location_permission');
-    if (permission === 'granted') {
+// ==================== AVALIAÇÃO ====================
+function initEvaluationPage() {
+    console.log('⭐ Inicializando página de avaliação...');
+    
+    // Inicializar campos opcionais
+    if (typeof initOptionalFields === 'function') {
+        setTimeout(initOptionalFields, 500);
+    }
+    
+    // Adicionar mensagem de cadastro automático
+    const evaluateCompanyInput = document.getElementById('evaluate-company');
+    if (evaluateCompanyInput && !document.querySelector('.auto-register-notice')) {
+        const notice = document.createElement('div');
+        notice.className = 'auto-register-notice';
+        notice.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Empresa não encontrada?</strong> 
+                <p style="margin: 5px 0 0 0; font-size: 0.9rem;">
+                    Digite o nome completo e ela será cadastrada automaticamente para todos os usuários!
+                    <br><small>Ex: "Nome da Empresa Ltda", "Restaurante Tal", "Loja X"</small>
+                </p>
+            </div>
+        `;
+        evaluateCompanyInput.parentNode.insertBefore(notice, evaluateCompanyInput.nextSibling);
+    }
+}
+
+function verificarAvaliacao() {
+    if (!window.currentUser) {
+        showToast('Faça login para avaliar uma empresa', 'info');
+        showAuthModal();
+        return;
+    }
+    
+    // Verificar se aceitou os termos
+    if (!window.termosAceitos) {
+        showToast('Você precisa aceitar os termos de uso primeiro', 'warning');
+        showTermosModal();
+        return;
+    }
+    
+    const companyName = document.getElementById('evaluate-company').value.trim();
+    const rating = document.querySelector('input[name="rating"]:checked');
+    const text = document.getElementById('evaluation-text').value.trim();
+    const isAnonima = document.getElementById('avaliacao-anonima')?.checked || false;
+    
+    if (!companyName || !rating || !text) {
+        showToast('Preencha todos os campos obrigatórios', 'error');
+        return;
+    }
+    
+    if (text.length < 50) {
+        showToast('A avaliação deve ter pelo menos 50 caracteres', 'error');
+        return;
+    }
+    
+    // Verificar conteúdo ofensivo
+    if (verificarConteudoOfensivo(text)) {
+        showToast('Sua avaliação contém conteúdo ofensivo. Por favor, revise o texto.', 'error');
+        return;
+    }
+    
+    showAvisoModal();
+}
+
+function showAvisoModal() {
+    const modal = document.getElementById('aviso-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10);
+        
+        const checkbox = document.getElementById('concordar-avisos');
+        const button = document.getElementById('prosseguir-avaliacao');
+        
+        if (checkbox && button) {
+            checkbox.checked = false;
+            button.disabled = true;
+            
+            checkbox.onchange = function() {
+                button.disabled = !this.checked;
+            };
+        }
+    }
+}
+
+function hideAvisoModal() {
+    const modal = document.getElementById('aviso-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300);
+    }
+}
+
+function prosseguirAvaliacao() {
+    const companyName = document.getElementById('evaluate-company').value.trim();
+    const rating = parseInt(document.querySelector('input[name="rating"]:checked').value);
+    const text = document.getElementById('evaluation-text').value.trim();
+    const sector = document.getElementById('evaluate-sector')?.value || "Outros";
+    const location = document.getElementById('evaluate-location')?.value.trim() || "Brasil";
+    const isAnonima = document.getElementById('avaliacao-anonima')?.checked || false;
+    
+    // Criar avaliação
+    const evaluation = {
+        id: Date.now(),
+        companyName: companyName,
+        rating: rating,
+        text: text,
+        sector: sector,
+        location: location,
+        userId: window.currentUser.id,
+        userName: isAnonima ? 'Usuário Anônimo' : window.currentUser.name,
+        userEmail: window.currentUser.email,
+        date: new Date().toISOString(),
+        avisoAceito: true,
+        anonima: isAnonima,
+        ip: 'registrado', // Em produção, capturar IP real
+        denunciada: false,
+        removida: false,
+        // Campos opcionais
+        ambient: selectedAmbient,
+        benefits: [...selectedBenefits, ...customBenefits],
+        salaryAmount: salaryAmount,
+        salaryPeriod: salaryPeriod
+    };
+    
+    // Salvar avaliação
+    const evaluations = getStorageItem('reputai_evaluations') || [];
+    evaluations.push(evaluation);
+    setStorageItem('reputai_evaluations', evaluations);
+    
+    // Atualizar empresa ou criar nova
+    const companies = getStorageItem('reputai_companies') || [];
+    let company = companies.find(c => c.name.toLowerCase() === companyName.toLowerCase());
+    
+    if (!company) {
+        // Criar nova empresa
+        company = {
+            id: companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1,
+            name: companyName,
+            sector: sector,
+            location: location,
+            lat: -15 + (Math.random() - 0.5) * 20,
+            lng: -50 + (Math.random() - 0.5) * 20,
+            averageRating: rating,
+            reviewCount: 1,
+            description: `Empresa cadastrada através de avaliação - Setor: ${sector}`,
+            dataCadastro: new Date().toISOString()
+        };
+        companies.push(company);
+    } else {
+        // Atualizar empresa existente
+        const companyEvaluations = evaluations.filter(e => 
+            e.companyName.toLowerCase() === companyName.toLowerCase() &&
+            !e.removida && !e.denunciada
+        );
+        
+        if (companyEvaluations.length > 0) {
+            const totalRating = companyEvaluations.reduce((sum, e) => sum + e.rating, 0);
+            company.averageRating = totalRating / companyEvaluations.length;
+            company.reviewCount = companyEvaluations.length;
+        }
+    }
+    
+    setStorageItem('reputai_companies', companies);
+    
+    // Limpar rascunho
+    removeStorageItem('reputai_evaluation_draft');
+    
+    // Fechar modal e mostrar sucesso
+    hideAvisoModal();
+    showToast('✅ Avaliação enviada com sucesso!', 'success');
+    
+    // Limpar formulário
+    document.getElementById('evaluate-company').value = '';
+    document.getElementById('evaluate-sector').value = '';
+    document.getElementById('evaluate-location').value = '';
+    document.getElementById('evaluation-text').value = '';
+    document.getElementById('avaliacao-anonima').checked = false;
+    document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+    
+    // Limpar campos opcionais
+    selectedAmbient = null;
+    selectedBenefits = [];
+    customBenefits = [];
+    salaryAmount = '';
+    salaryPeriod = 'mensal';
+    
+    // Redirecionar para home após 2 segundos
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 2000);
+}
+
+// ==================== FUNÇÕES PARA CAMPOS OPCIONAIS ====================
+function initOptionalFields() {
+    console.log('⚙️ Inicializando campos opcionais...');
+    
+    // Ambiente
+    document.querySelectorAll('.ambient-option').forEach(option => {
+        option.addEventListener('click', function() {
+            selectAmbientOption(this);
+        });
+    });
+    
+    // Benefícios
+    document.querySelectorAll('.benefit-checkbox').forEach(benefit => {
+        benefit.addEventListener('click', function() {
+            toggleBenefit(this);
+        });
+    });
+    
+    // Salário
+    const salaryInput = document.getElementById('salary-amount');
+    const salarySelect = document.getElementById('salary-period');
+    
+    if (salaryInput) {
+        salaryInput.addEventListener('input', function(e) {
+            salaryAmount = e.target.value;
+            saveEvaluationDraft();
+        });
+    }
+    
+    if (salarySelect) {
+        salarySelect.addEventListener('change', function(e) {
+            salaryPeriod = e.target.value;
+            saveEvaluationDraft();
+        });
+    }
+    
+    // Anônimo
+    const anonimoCheckbox = document.getElementById('avaliacao-anonima');
+    if (anonimoCheckbox) {
+        anonimoCheckbox.addEventListener('change', function() {
+            saveEvaluationDraft();
+        });
+    }
+    
+    // Carregar rascunho
+    loadEvaluationDraft();
+    
+    // Benefício customizado
+    const customBenefitInput = document.getElementById('custom-benefit');
+    if (customBenefitInput) {
+        customBenefitInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCustomBenefit();
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+function selectAmbientOption(element) {
+    document.querySelectorAll('.ambient-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    selectedAmbient = element.getAttribute('data-value');
+    saveEvaluationDraft();
+}
+
+function toggleBenefit(element) {
+    const benefit = element.getAttribute('data-value');
+    if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        selectedBenefits = selectedBenefits.filter(b => b !== benefit);
+    } else {
+        element.classList.add('selected');
+        selectedBenefits.push(benefit);
+    }
+    saveEvaluationDraft();
+}
+
+function addCustomBenefit() {
+    const input = document.getElementById('custom-benefit');
+    const benefit = input.value.trim();
+    
+    if (benefit && !customBenefits.includes(benefit) && !selectedBenefits.includes(benefit)) {
+        customBenefits.push(benefit);
+        updateCustomBenefitsList();
+        input.value = '';
+        saveEvaluationDraft();
+        showToast('Benefício adicionado!', 'success');
+    } else if (!benefit) {
+        showToast('Digite um benefício', 'error');
+    } else {
+        showToast('Este benefício já foi adicionado', 'info');
+    }
+}
+
+function removeCustomBenefit(benefit) {
+    const index = customBenefits.indexOf(benefit);
+    if (index !== -1) {
+        customBenefits.splice(index, 1);
+        updateCustomBenefitsList();
+        saveEvaluationDraft();
+        showToast('Benefício removido', 'info');
+    }
+}
+
+function updateCustomBenefitsList() {
+    const list = document.getElementById('custom-benefits-list');
+    if (list) {
+        list.innerHTML = customBenefits.map(benefit => `
+            <div class="custom-benefit-tag">
+                ${benefit}
+                <button onclick="removeCustomBenefit('${benefit}')">&times;</button>
+            </div>
+        `).join('');
+    }
+}
+
+function saveEvaluationDraft() {
+    const draft = {
+        companyName: document.getElementById('evaluate-company')?.value || '',
+        sector: document.getElementById('evaluate-sector')?.value || '',
+        location: document.getElementById('evaluate-location')?.value || '',
+        text: document.getElementById('evaluation-text')?.value || '',
+        anonima: document.getElementById('avaliacao-anonima')?.checked || false,
+        salaryAmount,
+        salaryPeriod,
+        selectedAmbient,
+        selectedBenefits,
+        customBenefits,
+        savedAt: new Date().toISOString()
+    };
+    
+    setStorageItem('reputai_evaluation_draft', draft);
+}
+
+function loadEvaluationDraft() {
+    const draft = getStorageItem('reputai_evaluation_draft');
+    
+    if (draft) {
+        if (draft.companyName) document.getElementById('evaluate-company').value = draft.companyName;
+        if (draft.sector) document.getElementById('evaluate-sector').value = draft.sector;
+        if (draft.location) document.getElementById('evaluate-location').value = draft.location;
+        if (draft.text) document.getElementById('evaluation-text').value = draft.text;
+        
+        if (draft.anonima) {
+            document.getElementById('avaliacao-anonima').checked = draft.anonima;
+        }
+        
+        if (draft.selectedAmbient) {
+            const element = document.querySelector(`.ambient-option[data-value="${draft.selectedAmbient}"]`);
+            if (element) selectAmbientOption(element);
+        }
+        
+        if (draft.selectedBenefits) {
+            draft.selectedBenefits.forEach(benefit => {
+                const element = document.querySelector(`.benefit-checkbox[data-value="${benefit}"]`);
+                if (element) toggleBenefit(element);
+            });
+        }
+        
+        if (draft.customBenefits) {
+            customBenefits = draft.customBenefits;
+            updateCustomBenefitsList();
+        }
+        
+        if (draft.salaryAmount) {
+            document.getElementById('salary-amount').value = draft.salaryAmount;
+            salaryAmount = draft.salaryAmount;
+        }
+        if (draft.salaryPeriod) {
+            document.getElementById('salary-period').value = draft.salaryPeriod;
+            salaryPeriod = draft.salaryPeriod;
+        }
+        
+        showToast('Rascunho da avaliação carregado', 'info');
+    }
+}
+
+// ==================== EMPRESAS DO MAPA ====================
+function buscarEmpresasDoMapa() {
+    return [
+        {
+            id: 16, name: "Mercado Municipal de São Paulo", sector: "Alimentação",
+            location: "São Paulo, SP", lat: -23.5414, lng: -46.6340,
+            averageRating: 0, reviewCount: 0
+        },
+        {
+            id: 17, name: "Shopping Iguatemi São Paulo", sector: "Varejo",
+            location: "São Paulo, SP", lat: -23.5779, lng: -46.6888,
+            averageRating: 0, reviewCount: 0
+        }
+    ];
+}
+
+function sincronizarEmpresasDoMapa() {
+    const empresasExistentes = getStorageItem('reputai_companies') || [];
+    const empresasMapa = buscarEmpresasDoMapa();
+    
+    let novasEmpresas = 0;
+    
+    empresasMapa.forEach(empresaMapa => {
+        const existe = empresasExistentes.some(e => 
+            e.name.toLowerCase() === empresaMapa.name.toLowerCase()
+        );
+        
+        if (!existe) {
+            empresaMapa.id = empresasExistentes.length > 0 ? 
+                Math.max(...empresasExistentes.map(e => e.id)) + 1 : 1;
+            empresaMapa.dataCadastro = new Date().toISOString();
+            empresaMapa.averageRating = 0;
+            empresaMapa.reviewCount = 0;
+            empresasExistentes.push(empresaMapa);
+            novasEmpresas++;
+        }
+    });
+    
+    if (novasEmpresas > 0) {
+        setStorageItem('reputai_companies', empresasExistentes);
+        showToast(`${novasEmpresas} novas empresas sincronizadas do mapa!`, 'success');
+        console.log(`✅ ${novasEmpresas} empresas sincronizadas`);
+    }
+    
+    return empresasExistentes;
+}
+
+// ==================== INICIALIZAÇÃO DA APLICAÇÃO ====================
+function initApp() {
+    console.log('🚀 Inicializando aplicação...');
+    
+    // Inicializar animação de digitação
+    initTypingEffect();
+    
+    // Inicializar mapa
+    initMap();
+    
+    // Carregar empresas
+    loadHomeCompanies();
+    
+    // Verificar permissão de localização
+    const savedPermission = getStorageItem('reputai_location_permission');
+    if (savedPermission === 'granted') {
         locationPermission = true;
         updateLocationStatus('Localização ativa', true);
     }
-}
-
-// ==================== INICIALIZAÇÃO ====================
-function initApp() {
-    initHeaderScroll();
-    initTypingEffect();
-    initMap();
-    loadHomeCompanies();
-    initComoFuncionaSection();
-    checkLocationPermission();
     
-    const savedLocation = localStorage.getItem('user_location');
-    if (savedLocation) {
-        try {
-            userLocation = JSON.parse(savedLocation);
-            updateLocationStatus('Localização salva', true);
-        } catch (e) {
-            console.error('Erro ao carregar localização:', e);
-        }
-    }
-}
-
-// ==================== FUNÇÕES AUXILIARES PARA MAPA ====================
-function getUserLocationName(lat, lng) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.address) {
-                let locationName = '';
-                if (data.address.city || data.address.town) {
-                    locationName = data.address.city || data.address.town;
-                } else if (data.address.state) {
-                    locationName = data.address.state;
-                } else if (data.address.country) {
-                    locationName = data.address.country;
-                }
-                
-                if (locationName) {
-                    document.getElementById('current-location').textContent = locationName;
-                    document.getElementById('location-info').style.display = 'block';
-                    
-                    localStorage.setItem('user_location', JSON.stringify({
-                        lat: lat,
-                        lng: lng,
-                        name: locationName
-                    }));
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao obter nome da localização:', error);
-            document.getElementById('current-location').textContent = 
-                `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            document.getElementById('location-info').style.display = 'block';
+    // Configurar eventos de busca
+    const searchInput = document.getElementById('search-company');
+    const searchButton = document.querySelector('.btn-search');
+    
+    if (searchInput && searchButton) {
+        searchButton.onclick = searchCompanies;
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchCompanies();
         });
+    }
+    
+    console.log('✅ Aplicação inicializada com sucesso');
 }
 
-// ==================== EXPORTAR FUNÇÕES GLOBAIS ====================
+// ==================== EXPORTAÇÃO GLOBAL ====================
 window.scrollToElement = scrollToElement;
 window.scrollToTop = scrollToTop;
 window.searchCompanies = searchCompanies;
@@ -960,8 +1274,43 @@ window.showCompanyDetails = showCompanyDetails;
 window.closeModal = closeModal;
 window.hideAvisoModal = hideAvisoModal;
 window.prosseguirAvaliacao = prosseguirAvaliacao;
-window.showCompanyDetailsFromMap = showCompanyDetailsFromMap;
-window.scrollToComoFunciona = scrollToComoFunciona;
-window.loadHomeCompanies = loadHomeCompanies;
-window.showModal = showModal;
+window.initApp = initApp;
 window.showToast = showToast;
+window.showModal = showModal;
+window.initEvaluationPage = initEvaluationPage;
+window.selectAmbientOption = selectAmbientOption;
+window.toggleBenefit = toggleBenefit;
+window.addCustomBenefit = addCustomBenefit;
+window.removeCustomBenefit = removeCustomBenefit;
+window.updateCustomBenefitsList = updateCustomBenefitsList;
+window.saveEvaluationDraft = saveEvaluationDraft;
+window.loadEvaluationDraft = loadEvaluationDraft;
+window.sincronizarEmpresasDoMapa = sincronizarEmpresasDoMapa;
+window.buscarEmpresasDoMapa = buscarEmpresasDoMapa;
+window.denunciarAvaliacao = denunciarAvaliacao;
+window.enviarDenuncia = enviarDenuncia;
+
+// Verificar se as funções de storage estão disponíveis
+if (!window.getStorageItem) {
+    window.getStorageItem = function(key) {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : null;
+        } catch (e) {
+            return null;
+        }
+    };
+}
+
+if (!window.setStorageItem) {
+    window.setStorageItem = function(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
+}
+
+console.log('✅ [script] Sistema principal carregado');
