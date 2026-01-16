@@ -17,73 +17,13 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
     <!-- Nosso CSS -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- ========== FIREBASE CONFIG ========== -->
-    <script type="module">
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCikJ1Cf_AS8tfKgythZdUqeyUAc96z7Eg",
-            authDomain: "reputai143.firebaseapp.com",
-            projectId: "reputai143",
-            storageBucket: "reputai143.appspot.com",
-            messagingSenderId: "127119539085",
-            appId: "1:127119539085:web:325373bf1da5a16b5c9bc4"
-        };
-
-        // Importar e inicializar Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-        
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // Testar conexão
-        console.log("🔥 Firebase conectado! Projeto:", app.options.projectId);
-        
-        // Disponibilizar globalmente para outros scripts
-        window.firebaseApp = app;
-        window.firebaseDb = db;
-        window.firebaseAuth = auth;
-        
-        // Função de fallback para evitar erros
-        window.showAdminPanel = function() {
-            console.log("Função showAdminPanel não implementada");
-        };
-        
-        // Verificar quando tudo estiver carregado
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log("✅ Firebase pronto para uso!");
-        });
-    </script>
-    <!-- ==================================== -->
-    
-    <style>
-        .aviso-home {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: var(--radius);
-            margin: 2rem auto;
-            max-width: 800px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .aviso-home h3 {
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-        
-        .aviso-home p {
-            margin-bottom: 1.5rem;
-            opacity: 0.9;
-        }
-    </style>
 </head>
 <body>
     <!-- Loading -->
@@ -91,75 +31,6 @@
         <div class="loading-spinner"></div>
         <h2>ReputAí</h2>
         <p>Carregando...</p>
-    </div>
-
-    <!-- Modal de Aviso de Avaliação -->
-    <div class="modal-overlay" id="aviso-modal" style="display: none;">
-        <div class="auth-modal" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <h2><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: Política de Avaliações</h2>
-                <p>Leia atentamente antes de prosseguir</p>
-            </div>
-            
-            <div class="tab-content" style="padding: 1.5rem;">
-                <div class="aviso-content">
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                        <i class="fas fa-check-circle" style="color: #3b82f6; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Avaliações devem ser baseadas em experiência real</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Sua avaliação deve refletir sua experiência pessoal na empresa
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <i class="fas fa-times-circle" style="color: #dc2626; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Não são permitidas avaliações copiadas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Avaliações de outros sites ou fontes externas serão removidas
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <i class="fas fa-shield-alt" style="color: #10b981; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Apenas avaliações feitas em nosso site são válidas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Este sistema aceita apenas avaliações feitas diretamente aqui
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="termos-uso" style="margin-top: 1.5rem; padding: 15px; background: #f8fafc; border-radius: var(--radius);">
-                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                            <input type="checkbox" id="concordar-avisos" style="margin-top: 5px;">
-                            <div>
-                                <label for="concordar-avisos" style="font-weight: 500; cursor: pointer;">
-                                    Concordo com os termos acima e confirmo que:
-                                </label>
-                                <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; color: var(--gray);">
-                                    <li>Esta avaliação é baseada em minha experiência pessoal</li>
-                                    <li>Não estou copiando conteúdo de outros sites</li>
-                                    <li>Estou sendo honesto e objetivo em minha avaliação</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button class="btn btn-secondary" onclick="hideAvisoModal()" style="flex: 1;">
-                        Cancelar
-                    </button>
-                    <button class="btn btn-primary" id="prosseguir-avaliacao" onclick="prosseguirAvaliacao()" style="flex: 1;" disabled>
-                        <i class="fas fa-check"></i> Concordo e Prosseguir
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Header -->
@@ -183,12 +54,12 @@
                         <li><a href="#como-funciona"><i class="fas fa-question-circle"></i> Como Funciona</a></li>
                         <li id="auth-nav-item">
                             <div class="user-menu-container">
-                                <div class="user-avatar" onclick="toggleUserMenu()" id="user-avatar" style="display: none;">
-                                    <i class="fas fa-user"></i>
+                                <div class="user-avatar" id="user-avatar" style="display: none;">
+                                    <!-- Avatar será preenchido via JavaScript -->
                                 </div>
                                 <div class="user-menu" id="user-menu" style="display: none;"></div>
                             </div>
-                            <a href="#" class="nav-btn" onclick="showAuthModal(event)" id="login-btn">
+                            <a href="#" class="nav-btn" id="login-btn">
                                 <i class="fas fa-user"></i> Entrar
                             </a>
                         </li>
@@ -225,25 +96,25 @@
                 <h3>Buscar Empresas</h3>
                 <div class="search-input-group">
                     <input type="text" id="search-company" placeholder="Digite o nome da empresa, setor ou localização">
-                    <button class="btn-search" onclick="searchCompanies()">
+                    <button class="btn-search">
                         <i class="fas fa-search"></i> Buscar
                     </button>
                 </div>
                 <div class="search-filters">
                     <div class="filter-tags" id="filter-tags">
-                        <span class="filter-tag" onclick="filterBySector('Tecnologia')">Tecnologia</span>
-                        <span class="filter-tag" onclick="filterBySector('Finanças')">Finanças</span>
-                        <span class="filter-tag" onclick="filterBySector('Saúde')">Saúde</span>
-                        <span class="filter-tag" onclick="filterBySector('Varejo')">Varejo</span>
-                        <span class="filter-tag" onclick="filterBySector('Serviços')">Serviços</span>
-                        <span class="filter-tag" onclick="filterBySector('Energia')">Energia</span>
-                        <span class="filter-tag" onclick="filterBySector('Educação')">Educação</span>
+                        <span class="filter-tag" data-sector="Tecnologia">Tecnologia</span>
+                        <span class="filter-tag" data-sector="Finanças">Finanças</span>
+                        <span class="filter-tag" data-sector="Saúde">Saúde</span>
+                        <span class="filter-tag" data-sector="Varejo">Varejo</span>
+                        <span class="filter-tag" data-sector="Serviços">Serviços</span>
+                        <span class="filter-tag" data-sector="Energia">Energia</span>
+                        <span class="filter-tag" data-sector="Educação">Educação</span>
                     </div>
                 </div>
                 <div class="location-status" id="location-status">
                     <i class="fas fa-map-marker-alt"></i>
                     <span id="location-text">Clique para ativar sua localização</span>
-                    <button class="btn-location" onclick="requestLocationPermission()">
+                    <button class="btn-location">
                         <i class="fas fa-crosshairs"></i> Ativar
                     </button>
                 </div>
@@ -262,10 +133,10 @@
             <div class="map-container">
                 <div id="map"></div>
                 <div class="map-controls">
-                    <button class="btn-map" onclick="locateUser()">
+                    <button class="btn-map" id="locate-btn">
                         <i class="fas fa-crosshairs"></i> Minha Localização
                     </button>
-                    <button class="btn-map" onclick="resetMapView()">
+                    <button class="btn-map" id="reset-map-btn">
                         <i class="fas fa-sync-alt"></i> Resetar Vista
                     </button>
                 </div>
@@ -430,6 +301,7 @@
     <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal">
         <div class="auth-modal">
+            <button class="modal-close">&times;</button>
             <div class="modal-header">
                 <h2>Bem-vindo ao ReputAí</h2>
                 <p>Entre para avaliar empresas</p>
@@ -447,12 +319,12 @@
                         <input type="password" id="login-password" placeholder="Sua senha">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="login()" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary" id="login-submit-btn" style="width: 100%; margin-top: 1rem;">
                         <i class="fas fa-sign-in-alt"></i> Entrar
                     </button>
                     
                     <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Ainda não tem conta? <a href="#" onclick="showRegisterForm()">Cadastre-se</a></p>
+                        <p style="color: var(--gray);">Ainda não tem conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
                     </div>
                 </div>
                 
@@ -472,13 +344,83 @@
                         <input type="password" id="register-password" placeholder="Mínimo 6 caracteres">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="register()" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary" id="register-submit-btn" style="width: 100%; margin-top: 1rem;">
                         <i class="fas fa-user-plus"></i> Criar Conta
                     </button>
                     
                     <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Já tem conta? <a href="#" onclick="showLoginForm()">Entre aqui</a></p>
+                        <p style="color: var(--gray);">Já tem conta? <a href="#" id="show-login-link">Entre aqui</a></p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Aviso de Avaliação -->
+    <div class="modal-overlay" id="aviso-modal" style="display: none;">
+        <div class="auth-modal" style="max-width: 500px;">
+            <button class="modal-close">&times;</button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <h2><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: Política de Avaliações</h2>
+                <p>Leia atentamente antes de prosseguir</p>
+            </div>
+            
+            <div class="tab-content" style="padding: 1.5rem;">
+                <div class="aviso-content">
+                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                        <i class="fas fa-check-circle" style="color: #3b82f6; margin-top: 2px;"></i>
+                        <div>
+                            <strong>Avaliações devem ser baseadas em experiência real</strong>
+                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
+                                Sua avaliação deve refletir sua experiência pessoal na empresa
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
+                        <i class="fas fa-times-circle" style="color: #dc2626; margin-top: 2px;"></i>
+                        <div>
+                            <strong>Não são permitidas avaliações copiadas</strong>
+                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
+                                Avaliações de outros sites ou fontes externas serão removidas
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #10b981;">
+                        <i class="fas fa-shield-alt" style="color: #10b981; margin-top: 2px;"></i>
+                        <div>
+                            <strong>Apenas avaliações feitas em nosso site são válidas</strong>
+                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
+                                Este sistema aceita apenas avaliações feitas diretamente aqui
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="termos-uso" style="margin-top: 1.5rem; padding: 15px; background: #f8fafc; border-radius: var(--radius);">
+                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
+                            <input type="checkbox" id="concordar-avisos" style="margin-top: 5px;">
+                            <div>
+                                <label for="concordar-avisos" style="font-weight: 500; cursor: pointer;">
+                                    Concordo com os termos acima e confirmo que:
+                                </label>
+                                <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; color: var(--gray);">
+                                    <li>Esta avaliação é baseada em minha experiência pessoal</li>
+                                    <li>Não estou copiando conteúdo de outros sites</li>
+                                    <li>Estou sendo honesto e objetivo em minha avaliação</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" id="cancelar-avaliacao-btn" style="flex: 1;">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary" id="prosseguir-avaliacao" style="flex: 1;" disabled>
+                        <i class="fas fa-check"></i> Concordo e Prosseguir
+                    </button>
                 </div>
             </div>
         </div>
@@ -487,67 +429,148 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <!-- Scripts -->
+    <!-- Scripts NA ORDEM CORRETA -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <!-- Nossos Scripts -->
     <script src="script.js"></script>
+    <script src="init-firebase.js"></script>
     <script src="auth.js"></script>
+    <script src="init.js"></script>
     
-    <!-- Inicialização CORRIGIDA -->
+    <!-- Inicialização -->
     <script>
-        // Inicialização corrigida
+        // Configurar eventos específicos da página
         document.addEventListener('DOMContentLoaded', function() {
-            // Primeiro, garantir que Firebase está carregado
-            function checkFirebaseAndInit() {
-                if (window.firebaseDb) {
-                    console.log("✅ Firebase carregado, iniciando app...");
-                    initApp();
-                } else {
-                    console.log("⏳ Aguardando Firebase...");
-                    setTimeout(checkFirebaseAndInit, 100);
-                }
-            }
+            console.log('🌐 Configurando eventos da página...');
             
-            setTimeout(() => {
-                document.getElementById('global-loading').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('global-loading').style.display = 'none';
-                    checkFirebaseAndInit();
-                }, 500);
-            }, 1000);
+            // Configurar busca
+            const searchBtn = document.querySelector('.btn-search');
+            const searchInput = document.getElementById('search-company');
             
-            // Configurar checkbox do modal de aviso APENAS SE EXISTIR
-            const concordarCheckbox = document.getElementById('concordar-avisos');
-            if (concordarCheckbox) {
-                concordarCheckbox.addEventListener('change', function() {
-                    const prosseguirBtn = document.getElementById('prosseguir-avaliacao');
-                    if (prosseguirBtn) {
-                        prosseguirBtn.disabled = !this.checked;
+            if (searchBtn) {
+                searchBtn.addEventListener('click', function() {
+                    if (typeof searchCompanies === 'function') {
+                        searchCompanies();
                     }
                 });
             }
             
-            function initApp() {
-                // Verificar funções antes de chamar
-                if (typeof initTypingEffect === 'function') initTypingEffect();
-                if (typeof initMap === 'function') initMap();
-                if (typeof loadHomeCompanies === 'function') loadHomeCompanies();
-                if (typeof initComoFuncionaSection === 'function') initComoFuncionaSection();
-                
-                // Verificar se há permissão de localização salva
-                const savedPermission = localStorage.getItem('reputai_location_permission');
-                if (savedPermission === 'granted') {
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && typeof searchCompanies === 'function') {
+                        searchCompanies();
+                    }
+                });
+            }
+            
+            // Configurar filtros
+            const filterTags = document.querySelectorAll('.filter-tag');
+            filterTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const sector = this.getAttribute('data-sector');
+                    if (sector && typeof filterBySector === 'function') {
+                        filterBySector(sector);
+                    }
+                });
+            });
+            
+            // Configurar botões do mapa
+            const locateBtn = document.getElementById('locate-btn');
+            const resetMapBtn = document.getElementById('reset-map-btn');
+            
+            if (locateBtn) {
+                locateBtn.addEventListener('click', function() {
+                    if (typeof locateUser === 'function') {
+                        locateUser();
+                    }
+                });
+            }
+            
+            if (resetMapBtn) {
+                resetMapBtn.addEventListener('click', function() {
+                    if (typeof resetMapView === 'function') {
+                        resetMapView();
+                    }
+                });
+            }
+            
+            // Configurar botão de localização
+            const locationBtn = document.querySelector('.btn-location');
+            if (locationBtn) {
+                locationBtn.addEventListener('click', function() {
                     if (typeof requestLocationPermission === 'function') {
                         requestLocationPermission();
                     }
-                }
+                });
             }
             
-            // Definir função para evitar erro no script.js
-            window.showAdminPanel = function() {
-                console.log("Função showAdminPanel chamada (stub)");
-            };
+            // Configurar botões do modal de autenticação
+            const loginSubmitBtn = document.getElementById('login-submit-btn');
+            const registerSubmitBtn = document.getElementById('register-submit-btn');
+            const showRegisterLink = document.getElementById('show-register-link');
+            const showLoginLink = document.getElementById('show-login-link');
+            
+            if (loginSubmitBtn) {
+                loginSubmitBtn.addEventListener('click', function() {
+                    if (typeof login === 'function') {
+                        login();
+                    }
+                });
+            }
+            
+            if (registerSubmitBtn) {
+                registerSubmitBtn.addEventListener('click', function() {
+                    if (typeof register === 'function') {
+                        register();
+                    }
+                });
+            }
+            
+            if (showRegisterLink) {
+                showRegisterLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof showRegisterForm === 'function') {
+                        showRegisterForm();
+                    }
+                });
+            }
+            
+            if (showLoginLink) {
+                showLoginLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof showLoginForm === 'function') {
+                        showLoginForm();
+                    }
+                });
+            }
+            
+            // Configurar modal de aviso
+            const concordarCheckbox = document.getElementById('concordar-avisos');
+            const prosseguirBtn = document.getElementById('prosseguir-avaliacao');
+            const cancelarBtn = document.getElementById('cancelar-avaliacao-btn');
+            
+            if (concordarCheckbox && prosseguirBtn) {
+                concordarCheckbox.addEventListener('change', function() {
+                    prosseguirBtn.disabled = !this.checked;
+                });
+            }
+            
+            if (prosseguirBtn) {
+                prosseguirBtn.addEventListener('click', function() {
+                    if (typeof prosseguirAvaliacao === 'function') {
+                        prosseguirAvaliacao();
+                    }
+                });
+            }
+            
+            if (cancelarBtn) {
+                cancelarBtn.addEventListener('click', function() {
+                    if (typeof hideAvisoModal === 'function') {
+                        hideAvisoModal();
+                    }
+                });
+            }
         });
     </script>
 </body>

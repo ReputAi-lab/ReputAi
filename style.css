@@ -1,4 +1,4 @@
-/* ==================== RESET E VARIÁVEIS ==================== */
+/* style.css - Estilos completos do ReputAí */
 :root {
     --primary: #2563eb;
     --primary-dark: #1d4ed8;
@@ -45,20 +45,20 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+    background: white;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     z-index: 9999;
     transition: opacity 0.5s ease;
 }
 
 .loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid white;
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--gray-light);
+    border-top: 5px solid var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 20px;
@@ -67,6 +67,16 @@ body {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+#global-loading h2 {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+#global-loading p {
+    color: var(--gray);
 }
 
 /* ==================== HEADER ==================== */
@@ -79,10 +89,9 @@ header {
     z-index: 1000;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border-bottom: 1px solid var(--gray-light);
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
-/* Header quando scrolled */
 header.scrolled {
     padding: 0.5rem 0;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -99,6 +108,7 @@ header.scrolled {
     align-items: center;
     gap: 12px;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .logo-icon {
@@ -112,10 +122,9 @@ header.scrolled {
     justify-content: center;
     font-weight: bold;
     font-size: 24px;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
-/* Reduzir tamanho do logo quando header scrolled */
 header.scrolled .logo-icon {
     width: 40px;
     height: 40px;
@@ -125,7 +134,7 @@ header.scrolled .logo-icon {
 .logo-text h1 {
     font-size: 1.5rem;
     color: var(--dark);
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 header.scrolled .logo-text h1 {
@@ -135,7 +144,7 @@ header.scrolled .logo-text h1 {
 .logo-text span {
     color: var(--gray);
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
 header.scrolled .logo-text span {
@@ -148,10 +157,9 @@ nav ul {
     list-style: none;
     gap: 1rem;
     align-items: center;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
 
-/* Reduzir gap quando header scrolled */
 header.scrolled nav ul {
     gap: 0.5rem;
 }
@@ -167,9 +175,9 @@ nav a {
     gap: 8px;
     font-weight: 500;
     font-size: 0.95rem;
+    cursor: pointer;
 }
 
-/* Reduzir padding e font-size quando header scrolled */
 header.scrolled nav a {
     padding: 6px 12px;
     font-size: 0.85rem;
@@ -212,11 +220,19 @@ nav a.active {
     border: 2px solid var(--gray-light);
     transition: var(--transition);
     font-weight: bold;
+    overflow: hidden;
 }
 
 .user-avatar:hover {
     transform: scale(1.05);
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .user-menu {
@@ -231,6 +247,7 @@ nav a.active {
     display: none;
     animation: slideDown 0.3s ease;
     border: 1px solid var(--gray-light);
+    overflow: hidden;
 }
 
 .user-menu.active {
@@ -249,48 +266,61 @@ nav a.active {
 }
 
 .user-info {
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    padding: 15px;
     border-bottom: 1px solid var(--gray-light);
+    background: var(--light);
 }
 
-.user-avatar-small {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-}
-
-.user-menu a {
+.menu-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 1rem;
+    padding: 12px 15px;
     color: var(--dark);
     text-decoration: none;
     transition: var(--transition);
     border-bottom: 1px solid var(--gray-light);
+    cursor: pointer;
+    font-size: 0.9rem;
 }
 
-.user-menu a:last-child {
+.menu-item:last-child {
     border-bottom: none;
 }
 
-.user-menu a:hover {
+.menu-item:hover {
     background: var(--gray-light);
     color: var(--primary);
 }
 
-.user-menu a i {
+.menu-item i {
     width: 20px;
     text-align: center;
+}
+
+/* ==================== BOTÃO X PARA MODAIS ==================== */
+.modal-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: var(--transition);
+    z-index: 10;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
 /* ==================== HERO SECTION ==================== */
@@ -364,6 +394,8 @@ nav a.active {
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
 }
 
 .btn-primary {
@@ -421,6 +453,7 @@ nav a.active {
     border: 2px solid var(--gray-light);
     border-radius: var(--radius);
     font-size: 1rem;
+    font-family: 'Inter', sans-serif;
 }
 
 .btn-search {
@@ -434,6 +467,8 @@ nav a.active {
     display: flex;
     align-items: center;
     gap: 10px;
+    transition: var(--transition);
+    font-family: 'Inter', sans-serif;
 }
 
 .btn-search:hover {
@@ -482,6 +517,7 @@ nav a.active {
     cursor: pointer;
     font-size: 0.9rem;
     transition: var(--transition);
+    font-family: 'Inter', sans-serif;
 }
 
 .btn-location:hover {
@@ -658,6 +694,27 @@ nav a.active {
     line-height: 1.5;
 }
 
+.aviso-home {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: var(--radius);
+    margin: 2rem auto;
+    max-width: 800px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.aviso-home h3 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.aviso-home p {
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
 /* ==================== MAP SECTION ==================== */
 .map-section {
     padding: 5rem 0;
@@ -709,16 +766,11 @@ nav a.active {
     gap: 8px;
     font-weight: 500;
     transition: var(--transition);
+    font-family: 'Inter', sans-serif;
 }
 
 .btn-map:hover {
     background: var(--gray-light);
-}
-
-/* Estilo para marcador do usuário */
-.user-location-marker {
-    background: transparent;
-    border: none;
 }
 
 /* ==================== COMPANIES SECTION ==================== */
@@ -866,7 +918,6 @@ nav a.active {
     color: #ffd700;
 }
 
-/* ==================== NOVOS ESTILOS PARA AVALIAÇÃO ==================== */
 .optional-section {
     background: var(--light);
     padding: 1.5rem;
@@ -883,153 +934,33 @@ nav a.active {
     gap: 8px;
 }
 
-.optional-section h4 i {
-    color: var(--primary);
-}
-
-.ambient-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+.auto-register-notice {
+    background: #f0f9ff;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin: 15px 0;
+    display: flex;
+    align-items: flex-start;
     gap: 10px;
-    margin-bottom: 1rem;
+    color: var(--dark);
 }
 
-.ambient-option {
-    padding: 12px;
-    border: 2px solid var(--gray-light);
-    border-radius: var(--radius);
-    text-align: center;
-    cursor: pointer;
-    transition: var(--transition);
-    font-weight: 500;
+.auto-register-notice i {
+    color: #3b82f6;
+    font-size: 1.2rem;
+    margin-top: 2px;
 }
 
-.ambient-option:hover {
-    border-color: var(--primary);
+.auto-register-notice strong {
+    display: block;
+    margin-bottom: 5px;
 }
 
-.ambient-option.selected {
-    border-color: var(--primary);
-    background: var(--primary);
-    color: white;
-}
-
-.benefits-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-    margin-bottom: 1rem;
-}
-
-.benefit-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
-    background: white;
-    border: 2px solid var(--gray-light);
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.benefit-checkbox:hover {
-    border-color: var(--primary);
-}
-
-.benefit-checkbox.selected {
-    border-color: var(--success);
-    background: #f0fdf4;
-}
-
-.custom-benefit-input {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.custom-benefit-input input {
-    flex: 1;
-    padding: 10px;
-    border: 2px solid var(--gray-light);
-    border-radius: var(--radius);
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-}
-
-.custom-benefit-input button {
-    padding: 10px 20px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 600;
-    transition: var(--transition);
-}
-
-.custom-benefit-input button:hover {
-    background: var(--primary-dark);
-}
-
-.salary-range {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.salary-range input {
-    flex: 1;
-    padding: 10px;
-    border: 2px solid var(--gray-light);
-    border-radius: var(--radius);
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-}
-
-.salary-range select {
-    padding: 10px;
-    border: 2px solid var(--gray-light);
-    border-radius: var(--radius);
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-}
-
-.custom-benefits-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.custom-benefit-tag {
-    background: var(--primary);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.custom-benefit-tag button {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-size: 1rem;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.custom-benefit-tag button:hover {
-    opacity: 0.8;
+.auto-register-notice p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--gray);
 }
 
 /* ==================== FOOTER ==================== */
@@ -1129,6 +1060,7 @@ footer {
     max-width: 400px;
     overflow: hidden;
     animation: slideUp 0.3s ease;
+    position: relative;
 }
 
 @keyframes slideUp {
@@ -1145,7 +1077,7 @@ footer {
 .modal-content {
     max-width: 800px;
     max-height: 90vh;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .modal-header {
@@ -1161,10 +1093,15 @@ footer {
 
 .tab-pane {
     display: none;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .tab-pane.active {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* ==================== AVISO MODAL ==================== */
@@ -1250,6 +1187,56 @@ footer {
     }
 }
 
+/* ==================== SOCIAL LOGIN ==================== */
+.social-login {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-light);
+}
+
+.social-login p {
+    text-align: center;
+    color: var(--gray);
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.social-login-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-google, .btn-facebook {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.btn-google {
+    background: #DB4437;
+    color: white;
+}
+
+.btn-facebook {
+    background: #4267B2;
+    color: white;
+}
+
+.btn-google:hover, .btn-facebook:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 /* ==================== RESPONSIVO ==================== */
 @media (max-width: 768px) {
     .header-content {
@@ -1317,23 +1304,21 @@ footer {
         padding: 2rem 1.5rem;
     }
     
-    /* Responsivo para novos estilos de avaliação */
-    .ambient-options,
-    .benefits-grid {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    }
-    
-    .custom-benefit-input {
+    .empresas-stats {
         flex-direction: column;
+        align-items: center;
     }
     
-    .custom-benefit-input button {
-        width: 100%;
+    .stat-item {
+        min-width: 100%;
     }
     
-    .salary-range {
-        flex-direction: column;
-        align-items: stretch;
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
     }
 }
 
@@ -1381,25 +1366,7 @@ footer {
         font-size: 2rem;
     }
     
-    .empresas-stats {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .stat-item {
-        min-width: 100%;
-    }
-    
-    /* Responsivo para novos estilos de avaliação */
     .optional-section {
         padding: 1rem;
-    }
-    
-    .ambient-options {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .benefits-grid {
-        grid-template-columns: 1fr;
     }
 }
