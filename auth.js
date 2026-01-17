@@ -1,266 +1,466 @@
-// auth.js - Sistema de autenticação com painel administrativo completo CORRIGIDO
+// auth.js - Sistema de interface de autenticação
+console.log('🔐 [auth] Carregando interface de autenticação...');
+
+// ==================== VARIÁVEIS ====================
 let authModal = null;
+window.currentUser = null;
+window.termosAceitos = false;
 
-// ==================== CREDENCIAIS DO ADMIN ====================
-const ADMIN_CREDENTIALS = {
-    email: "gusta2206@admin.com",
-    password: "B@tata123",
-    name: "Administrador",
-    avatar: "👑",
-    isAdmin: true
-};
-
-// ==================== MODAL DE AUTENTICAÇÃO ====================
-function showAuthModal(e) {
-    if (e) e.preventDefault();
+// ==================== SISTEMA UNIFICADO DE AUTENTICAÇÃO ====================
+async function unifiedLogin(email, password) {
+    console.log('🔐 Tentando login com:', email);
     
-    const modal = document.getElementById('auth-modal');
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        authModal = modal;
-        
-        // Mostrar formulário de login por padrão
-        showLoginForm();
-        
-        // Focar no campo de email
-        setTimeout(() => {
-            const emailInput = document.getElementById('login-email');
-            if (emailInput) emailInput.focus();
-        }, 100);
-    }
-}
-
-function hideAuthModal() {
-    if (authModal) {
-        authModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-}
-
-function showLoginForm() {
-    document.getElementById('login-tab').style.display = 'block';
-    document.getElementById('register-tab').style.display = 'none';
-    
-    // Limpar campos
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
-    
-    // Focar no email
-    setTimeout(() => {
-        document.getElementById('login-email').focus();
-    }, 50);
-}
-
-function showRegisterForm() {
-    document.getElementById('login-tab').style.display = 'none';
-    document.getElementById('register-tab').style.display = 'block';
-    
-    // Limpar campos
-    document.getElementById('register-name').value = '';
-    document.getElementById('register-email').value = '';
-    document.getElementById('register-password').value = '';
-    
-    // Focar no nome
-    setTimeout(() => {
-        document.getElementById('register-name').focus();
-    }, 50);
-}
-
-// ==================== SISTEMA DE LOGIN/REGISTRO ====================
-function login() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    
-    // Validações básicas
-    if (!email || !password) {
-        showToast('Preencha email e senha', 'error');
-        return;
-    }
-    
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showToast('Digite um email válido', 'error');
-        return;
-    }
-    
-    // VERIFICAÇÃO DO ADMIN (CREDENCIAIS ESPECÍFICAS)
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-        // Login como administrador
-        currentUser = {
+    // 1. Verificar admin local (para testes)
+    if (email === "gusta2206@admin.com" && password === "B@tata123") {
+        const adminData = {
             id: 9999,
-            name: ADMIN_CREDENTIALS.name,
-            email: ADMIN_CREDENTIALS.email,
-            avatar: ADMIN_CREDENTIALS.avatar,
+            name: "Administrador",
+            email: "gusta2206@admin.com",
+            avatar: "👑",
             isAdmin: true,
             joined: new Date().toISOString(),
-            permissions: ['all']
+            provider: 'email'
         };
         
-        // Salvar sessão
-        localStorage.setItem('reputai_user', JSON.stringify(currentUser));
+        localStorage.setItem('reputai_user', JSON.stringify(adminData));
+        window.currentUser = adminData;
         
-        showToast(`👑 Bem-vindo, Administrador!`, 'success');
-        hideAuthModal();
-        updateUserInterface();
-        return;
+        return {
+            success: true,
+            user: adminData,
+            message: '👑 Bem-vindo, Administrador!'
+        };
     }
     
-    // Verificar se usuário existe (usuários normais)
+    // 2. Tentar Firebase
+    if (typeof loginWithFirebase === 'function') {
+        const result = await loginWithFirebase(email, password);
+        if (result.success) {
+            return result;
+        }
+    }
+    
+    // 3. Tentar usuários locais
     const savedUsers = JSON.parse(localStorage.getItem('reputai_users') || '[]');
-    const user = savedUsers.find(u => u.email === email && u.password === password);
+    const localUser = savedUsers.find(u => u.email === email && u.password === password);
     
-    if (user) {
-        // Login bem-sucedido para usuário normal
-        currentUser = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            avatar: user.name.charAt(0).toUpperCase(),
-            joined: user.joined,
+    if (localUser) {
+        const userData = {
+            id: localUser.id,
+            name: localUser.name,
+            email: localUser.email,
+            avatar: localUser.avatar || localUser.name.charAt(0).toUpperCase(),
+            joined: localUser.joined,
             isAdmin: false,
-            permissions: []
+            provider: 'email'
         };
         
-        // Salvar sessão
-        localStorage.setItem('reputai_user', JSON.stringify(currentUser));
+        localStorage.setItem('reputai_user', JSON.stringify(userData));
+        window.currentUser = userData;
         
-        showToast(`Bem-vindo de volta, ${currentUser.name}!`, 'success');
-        hideAuthModal();
-        updateUserInterface();
-    } else {
-        showToast('Email ou senha incorretos', 'error');
+        return {
+            success: true,
+            user: userData,
+            message: `Bem-vindo de volta, ${userData.name}!`
+        };
     }
+    
+    return {
+        success: false,
+        message: 'Email ou senha incorretos'
+    };
 }
 
-function register() {
-    const name = document.getElementById('register-name').value.trim();
-    const email = document.getElementById('register-email').value.trim();
-    const password = document.getElementById('register-password').value;
-    
-    // Validações
-    if (!name || !email || !password) {
-        showToast('Preencha todos os campos', 'error');
-        return;
+async function unifiedRegister(name, email, password) {
+    // 1. Tentar Firebase primeiro
+    if (typeof registerWithFirebase === 'function') {
+        const result = await registerWithFirebase(name, email, password);
+        if (result.success) {
+            return result;
+        }
     }
     
-    // Validar formato de email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showToast('Digite um email válido', 'error');
-        return;
-    }
-    
-    // Validar senha
-    if (password.length < 6) {
-        showToast('A senha deve ter no mínimo 6 caracteres', 'error');
-        return;
-    }
-    
-    // Verificar se email já está cadastrado
+    // 2. Fallback para localStorage
     const savedUsers = JSON.parse(localStorage.getItem('reputai_users') || '[]');
+    
+    // Verificar se email já existe
     if (savedUsers.some(u => u.email === email)) {
-        showToast('Este email já está cadastrado', 'error');
-        return;
+        return {
+            success: false,
+            message: 'Este email já está cadastrado'
+        };
     }
     
-    // Criar novo usuário
+    // Criar novo usuário local
     const newUser = {
         id: savedUsers.length > 0 ? Math.max(...savedUsers.map(u => u.id)) + 1 : 1,
         name: name,
         email: email,
         password: password,
+        avatar: name.charAt(0).toUpperCase(),
         joined: new Date().toISOString(),
         evaluations: []
     };
     
-    // Salvar usuário
     savedUsers.push(newUser);
     localStorage.setItem('reputai_users', JSON.stringify(savedUsers));
     
-    // Fazer login automaticamente
-    currentUser = {
+    const userData = {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
-        avatar: newUser.name.charAt(0).toUpperCase(),
+        avatar: newUser.avatar,
         joined: newUser.joined,
         isAdmin: false,
-        permissions: []
+        provider: 'email'
     };
     
-    // Salvar sessão
-    localStorage.setItem('reputai_user', JSON.stringify(currentUser));
+    localStorage.setItem('reputai_user', JSON.stringify(userData));
+    window.currentUser = userData;
     
-    showToast(`Conta criada com sucesso, ${currentUser.name}!`, 'success');
-    hideAuthModal();
-    updateUserInterface();
+    return {
+        success: true,
+        user: userData,
+        message: `Conta criada com sucesso, ${userData.name}!`
+    };
 }
 
-// ==================== GERENCIAMENTO DE USUÁRIO ====================
-function checkUserLogin() {
+// Função de logout unificada
+async function logoutUser() {
+    // Logout do Firebase se estiver conectado
+    if (window.firebaseUser && typeof logoutFirebase === 'function') {
+        await logoutFirebase();
+    }
+    
+    // Limpar localStorage
+    localStorage.removeItem('reputai_user');
+    window.currentUser = null;
+    window.termosAceitos = false;
+    
+    console.log('👋 Usuário deslogado do sistema');
+    showToast('Você saiu da sua conta', 'info');
+    
+    setTimeout(() => {
+        if (typeof updateUserInterface === 'function') {
+            updateUserInterface();
+        }
+    }, 300);
+}
+
+// ==================== VERIFICAÇÃO INICIAL DE SESSÃO ====================
+function initSessionCheck() {
+    console.log('🔍 Verificando sessão do usuário...');
+    
+    // 1. Verificar localStorage
     const savedUser = localStorage.getItem('reputai_user');
     
     if (savedUser) {
         try {
-            const user = JSON.parse(savedUser);
+            const userData = JSON.parse(savedUser);
+            window.currentUser = userData;
+            console.log('👤 Usuário carregado do localStorage:', userData.email);
             
-            // Verificar se é um usuário válido
-            if (user.email && user.name) {
-                // NÃO permitir auto-login do admin
-                if (user.isAdmin && user.email === ADMIN_CREDENTIALS.email) {
-                    // Admin precisa fazer login novamente
-                    localStorage.removeItem('reputai_user');
-                    currentUser = null;
-                    showToast('Admin: Por favor, faça login novamente', 'info');
-                } else {
-                    currentUser = user;
-                }
-            } else {
-                // Dados inválidos, remover
-                localStorage.removeItem('reputai_user');
-                currentUser = null;
+            // Verificar se é Firebase user
+            if (userData.firebaseUser && window.firebaseAuth) {
+                // Verificar se a sessão Firebase ainda é válida
+                window.firebaseAuth.currentUser?.reload()
+                    .then(() => {
+                        console.log('✅ Sessão Firebase válida');
+                    })
+                    .catch(() => {
+                        console.log('⚠️ Sessão Firebase expirada');
+                        window.currentUser = null;
+                        localStorage.removeItem('reputai_user');
+                    });
             }
+            
+            // Verificar termos
+            window.termosAceitos = localStorage.getItem(`reputai_termos_${userData.id}`) === 'true';
+            
         } catch (e) {
-            console.error('Erro ao carregar usuário:', e);
-            localStorage.removeItem('reputai_user');
-            currentUser = null;
+            console.error('❌ Erro ao carregar usuário:', e);
+            window.currentUser = null;
         }
+    } else {
+        console.log('👤 Nenhum usuário no localStorage');
+        window.currentUser = null;
     }
     
-    updateUserInterface();
+    // 2. Atualizar interface
+    setTimeout(() => {
+        if (typeof updateUserInterface === 'function') {
+            updateUserInterface();
+        }
+    }, 300);
 }
 
+// ==================== FUNÇÕES DO MODAL ====================
+function showAuthModal(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    console.log('🔓 Abrindo modal de autenticação...');
+    
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            modal.classList.add('active');
+        }, 10);
+        
+        authModal = modal;
+        
+        // Mostrar login por padrão
+        showLoginForm();
+        
+        // Focar no email
+        setTimeout(() => {
+            const emailInput = document.getElementById('login-email');
+            if (emailInput) {
+                emailInput.focus();
+            }
+        }, 100);
+        
+        // Adicionar botões sociais
+        if (typeof addSocialLoginButtons === 'function') {
+            setTimeout(addSocialLoginButtons, 200);
+        }
+    } else {
+        console.error('❌ Modal de autenticação não encontrado!');
+    }
+}
+
+function hideAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+}
+
+function showLoginForm() {
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    
+    if (loginTab) {
+        loginTab.style.display = 'block';
+        setTimeout(() => loginTab.classList.add('active'), 10);
+    }
+    
+    if (registerTab) {
+        registerTab.style.display = 'none';
+        registerTab.classList.remove('active');
+    }
+    
+    // Limpar campos
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    
+    if (loginEmail) loginEmail.value = '';
+    if (loginPassword) loginPassword.value = '';
+    
+    // Focar no email
+    setTimeout(() => {
+        if (loginEmail) loginEmail.focus();
+    }, 50);
+}
+
+function showRegisterForm() {
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    
+    if (loginTab) {
+        loginTab.style.display = 'none';
+        loginTab.classList.remove('active');
+    }
+    
+    if (registerTab) {
+        registerTab.style.display = 'block';
+        setTimeout(() => registerTab.classList.add('active'), 10);
+    }
+    
+    // Limpar campos
+    const registerName = document.getElementById('register-name');
+    const registerEmail = document.getElementById('register-email');
+    const registerPassword = document.getElementById('register-password');
+    
+    if (registerName) registerName.value = '';
+    if (registerEmail) registerEmail.value = '';
+    if (registerPassword) registerPassword.value = '';
+    
+    // Focar no nome
+    setTimeout(() => {
+        if (registerName) registerName.focus();
+    }, 50);
+}
+
+// ==================== FUNÇÕES DE LOGIN/REGISTER ====================
+function login() {
+    const email = document.getElementById('login-email')?.value.trim();
+    const password = document.getElementById('login-password')?.value;
+    
+    if (!email || !password) {
+        showToast('Preencha email e senha', 'error');
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Digite um email válido', 'error');
+        return;
+    }
+    
+    console.log('🔐 Tentando login com:', email);
+    
+    if (typeof unifiedLogin === 'function') {
+        const result = unifiedLogin(email, password);
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            hideAuthModal();
+            
+            setTimeout(() => {
+                updateUserInterface();
+                
+                // Verificar termos de uso
+                if (!window.termosAceitos) {
+                    setTimeout(() => {
+                        showTermosModal();
+                    }, 1000);
+                }
+            }, 300);
+        } else {
+            showToast(result.message, 'error');
+        }
+    } else {
+        showToast('Sistema de login não disponível', 'error');
+    }
+}
+
+function register() {
+    const name = document.getElementById('register-name')?.value.trim();
+    const email = document.getElementById('register-email')?.value.trim();
+    const password = document.getElementById('register-password')?.value;
+    
+    if (!name || !email || !password) {
+        showToast('Preencha todos os campos', 'error');
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Digite um email válido', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('A senha deve ter no mínimo 6 caracteres', 'error');
+        return;
+    }
+    
+    if (typeof unifiedRegister === 'function') {
+        const result = unifiedRegister(name, email, password);
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            hideAuthModal();
+            
+            setTimeout(() => {
+                updateUserInterface();
+                
+                // Mostrar termos de uso para novo usuário
+                setTimeout(() => {
+                    showTermosModal();
+                }, 1000);
+            }, 300);
+        } else {
+            showToast(result.message, 'error');
+        }
+    } else {
+        showToast('Sistema de registro não disponível', 'error');
+    }
+}
+
+// ==================== FUNÇÕES DE INTERFACE ====================
 function updateUserInterface() {
+    console.log('🔄 Atualizando interface do usuário...');
+    
     const loginBtn = document.getElementById('login-btn');
     const userAvatar = document.getElementById('user-avatar');
     const userMenu = document.getElementById('user-menu');
     
-    if (currentUser) {
-        // Usuário logado
-        if (loginBtn) loginBtn.style.display = 'none';
+    if (!loginBtn || !userAvatar) {
+        console.warn('⚠️ Elementos de interface não encontrados');
+        return;
+    }
+    
+    const user = window.currentUser;
+    
+    if (user) {
+        console.log('👤 Mostrando interface para usuário:', user.name);
         
-        if (userAvatar) {
-            userAvatar.style.display = 'flex';
-            userAvatar.innerHTML = currentUser.avatar;
-            userAvatar.title = `${currentUser.name}${currentUser.isAdmin ? ' (Admin)' : ''}`;
-            userAvatar.setAttribute('aria-label', `Perfil de ${currentUser.name}`);
-            
-            // Estilo especial para admin
-            if (currentUser.isAdmin) {
-                userAvatar.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
-                userAvatar.style.borderColor = '#fca5a5';
-                userAvatar.style.boxShadow = '0 0 10px rgba(220, 38, 38, 0.5)';
-            } else {
-                userAvatar.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
-                userAvatar.style.borderColor = '#e2e8f0';
-            }
+        // Esconder botão de login
+        loginBtn.style.display = 'none';
+        
+        // Mostrar avatar
+        userAvatar.style.display = 'flex';
+        
+        // Configurar avatar
+        if (user.photoURL && (user.provider === 'google' || user.provider === 'facebook')) {
+            userAvatar.innerHTML = `
+                <img src="${user.photoURL}" 
+                     style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" 
+                     alt="${user.name}"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>${user.avatar || user.name.charAt(0)}</text></svg>'">
+            `;
+        } else {
+            userAvatar.textContent = user.avatar || user.name.charAt(0).toUpperCase();
         }
+        
+        userAvatar.title = `${user.name}${user.isAdmin ? ' 👑' : ''}`;
+        
+        // Estilos especiais
+        if (user.isAdmin) {
+            userAvatar.style.background = 'linear-gradient(135deg, #dc2626, #b91c1c)';
+            userAvatar.style.boxShadow = '0 0 10px rgba(220, 38, 38, 0.5)';
+        } else if (user.provider === 'google') {
+            userAvatar.style.background = 'linear-gradient(135deg, #4285F4, #34A853)';
+        } else if (user.provider === 'facebook') {
+            userAvatar.style.background = 'linear-gradient(135deg, #4267B2, #898F9C)';
+        } else {
+            userAvatar.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+        }
+        
+        // Adicionar evento de clique
+        userAvatar.onclick = toggleUserMenu;
+        
+        // Esconder menu se estiver aberto
+        if (userMenu) {
+            userMenu.style.display = 'none';
+            userMenu.classList.remove('active');
+        }
+        
     } else {
-        // Usuário não logado
-        if (loginBtn) loginBtn.style.display = 'flex';
-        if (userAvatar) userAvatar.style.display = 'none';
+        console.log('👤 Mostrando interface para visitante');
+        
+        // Mostrar botão de login
+        loginBtn.style.display = 'flex';
+        
+        // Esconder avatar
+        userAvatar.style.display = 'none';
+        
+        // Configurar evento no botão de login
+        loginBtn.onclick = showAuthModal;
+        
+        // Esconder menu
         if (userMenu) {
             userMenu.style.display = 'none';
             userMenu.classList.remove('active');
@@ -272,17 +472,20 @@ function toggleUserMenu() {
     const menu = document.getElementById('user-menu');
     const userAvatar = document.getElementById('user-avatar');
     
-    if (!menu || !userAvatar || !currentUser) return;
+    if (!menu || !userAvatar) return;
     
     if (menu.classList.contains('active')) {
         menu.classList.remove('active');
-        menu.style.display = 'none';
+        setTimeout(() => {
+            menu.style.display = 'none';
+        }, 300);
     } else {
-        // Atualizar conteúdo do menu
         updateUserMenuContent();
         
-        menu.classList.add('active');
         menu.style.display = 'block';
+        setTimeout(() => {
+            menu.classList.add('active');
+        }, 10);
         
         // Posicionar menu
         const avatarRect = userAvatar.getBoundingClientRect();
@@ -294,7 +497,9 @@ function toggleUserMenu() {
             const closeMenuHandler = (e) => {
                 if (!menu.contains(e.target) && !userAvatar.contains(e.target)) {
                     menu.classList.remove('active');
-                    menu.style.display = 'none';
+                    setTimeout(() => {
+                        menu.style.display = 'none';
+                    }, 300);
                     document.removeEventListener('click', closeMenuHandler);
                 }
             };
@@ -305,361 +510,390 @@ function toggleUserMenu() {
 
 function updateUserMenuContent() {
     const menu = document.getElementById('user-menu');
-    if (!menu || !currentUser) return;
+    const user = window.currentUser;
+    
+    if (!menu || !user) return;
+    
+    let avatarHTML = '';
+    if (user.photoURL && (user.provider === 'google' || user.provider === 'facebook')) {
+        avatarHTML = `
+            <img src="${user.photoURL}" 
+                 style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" 
+                 alt="${user.name}"
+                 onerror="this.style.display='none'">
+        `;
+    } else {
+        const adminStyle = user.isAdmin ? 'linear-gradient(135deg, #dc2626, #b91c1c)' : 
+                          user.provider === 'google' ? 'linear-gradient(135deg, #4285F4, #34A853)' :
+                          user.provider === 'facebook' ? 'linear-gradient(135deg, #4267B2, #898F9C)' :
+                          'linear-gradient(135deg, #3b82f6, #2563eb)';
+        
+        avatarHTML = `
+            <div style="width: 40px; height: 40px; background: ${adminStyle}; color: white; 
+                        border-radius: 50%; display: flex; align-items: center; 
+                        justify-content: center; font-weight: bold; font-size: ${user.isAdmin ? '1.2rem' : '1rem'};">
+                ${user.avatar || user.name.charAt(0).toUpperCase()}
+            </div>
+        `;
+    }
+    
+    const providerBadge = user.provider === 'google' ? 
+        '<span style="background: #DB4437; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px;">Google</span>' :
+        user.provider === 'facebook' ? 
+        '<span style="background: #4267B2; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 5px;">Facebook</span>' : '';
+    
+    const termosStatus = window.termosAceitos ? 
+        '<span style="color: #10b981; font-size: 0.8rem;"><i class="fas fa-check-circle"></i> Termos aceitos</span>' :
+        '<span style="color: #f59e0b; font-size: 0.8rem;"><i class="fas fa-exclamation-triangle"></i> Aceitar termos</span>';
     
     menu.innerHTML = `
-        <div class="user-info">
-            <div class="user-avatar-small" style="
-                width: 40px; 
-                height: 40px; 
-                background: ${currentUser.isAdmin ? 'linear-gradient(135deg, #dc2626, #b91c1c)' : 'linear-gradient(135deg, #3b82f6, #2563eb)'}; 
-                color: white; 
-                border-radius: 50%; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-weight: bold;
-                font-size: ${currentUser.isAdmin ? '1.2rem' : '1rem'};
-            ">
-                ${currentUser.avatar}
-            </div>
-            <div>
-                <strong>${currentUser.name}${currentUser.isAdmin ? ' 👑' : ''}</strong>
-                <br>
-                <small>${currentUser.email}</small>
+        <div class="user-info" style="padding: 15px; border-bottom: 1px solid var(--gray-light);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                ${avatarHTML}
+                <div>
+                    <strong>${user.name}${user.isAdmin ? ' 👑' : ''}</strong>
+                    <div style="font-size: 0.85rem; color: var(--gray); margin-top: 2px;">
+                        ${user.email} ${providerBadge}
+                    </div>
+                    <small style="color: var(--gray); font-size: 0.75rem;">
+                        Logado via ${user.provider || 'email'}
+                    </small>
+                    <div style="margin-top: 5px;">
+                        ${termosStatus}
+                    </div>
+                </div>
             </div>
         </div>
-        <hr style="margin: 10px 0; border: none; border-top: 1px solid var(--gray-light);">
-        ${currentUser.isAdmin ? `
-            <a href="#" onclick="showAdminPanelFromAuth(); return false;" class="menu-item">
+        ${user.isAdmin ? `
+            <a href="#" onclick="showAdminPanel(); return false;" class="menu-item">
                 <i class="fas fa-crown" style="color: #f59e0b;"></i> Painel Administrativo
             </a>
-            <a href="#" onclick="manageCompaniesFromAuth(); return false;" class="menu-item">
+            <a href="#" onclick="manageCompanies(); return false;" class="menu-item">
                 <i class="fas fa-building"></i> Gerenciar Empresas
             </a>
-            <a href="#" onclick="viewStatisticsFromAuth(); return false;" class="menu-item">
+            <a href="#" onclick="viewDenuncias(); return false;" class="menu-item">
+                <i class="fas fa-flag"></i> Denúncias Pendentes
+                <span id="denuncias-count" class="badge"></span>
+            </a>
+            <a href="#" onclick="viewStatistics(); return false;" class="menu-item">
                 <i class="fas fa-chart-bar"></i> Estatísticas
             </a>
             <hr style="margin: 10px 0; border: none; border-top: 1px solid var(--gray-light);">
         ` : ''}
+        ${!window.termosAceitos ? `
+            <a href="#" onclick="showTermosModal(); return false;" class="menu-item">
+                <i class="fas fa-file-contract" style="color: #f59e0b;"></i> Ler e Aceitar Termos
+            </a>
+        ` : ''}
         <a href="#" onclick="showMyEvaluations(); return false;" class="menu-item">
             <i class="fas fa-star"></i> Minhas Avaliações
         </a>
+        <a href="#" onclick="sincronizarEmpresasDoMapa(); return false;" class="menu-item">
+            <i class="fas fa-sync-alt"></i> Sincronizar Empresas
+        </a>
+        <hr style="margin: 10px 0; border: none; border-top: 1px solid var(--gray-light);">
         <a href="#" onclick="logout(); return false;" class="menu-item" style="color: var(--danger);">
             <i class="fas fa-sign-out-alt"></i> Sair
         </a>
     `;
+    
+    // Atualizar contador de denúncias
+    if (user.isAdmin) {
+        updateDenunciasCount();
+    }
+}
+
+function updateDenunciasCount() {
+    const denuncias = JSON.parse(localStorage.getItem('reputai_denuncias') || '[]');
+    const pendentes = denuncias.filter(d => d.status === 'pendente').length;
+    
+    const badge = document.getElementById('denuncias-count');
+    if (badge) {
+        if (pendentes > 0) {
+            badge.textContent = pendentes;
+            badge.style.cssText = `
+                background: #dc2626;
+                color: white;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.7rem;
+                margin-left: auto;
+            `;
+        } else {
+            badge.textContent = '';
+            badge.style.display = 'none';
+        }
+    }
+}
+
+// ==================== MODAL DE TERMOS DE USO ====================
+function showTermosModal() {
+    const modal = document.getElementById('termos-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            modal.classList.add('active');
+        }, 10);
+        
+        // Configurar botão de aceitar
+        const aceitarBtn = document.getElementById('aceitar-termos-btn');
+        const checkbox = document.getElementById('concordar-termos');
+        
+        if (aceitarBtn && checkbox) {
+            checkbox.checked = false;
+            aceitarBtn.disabled = true;
+            
+            checkbox.onchange = function() {
+                aceitarBtn.disabled = !this.checked;
+            };
+            
+            aceitarBtn.onclick = function() {
+                if (checkbox.checked) {
+                    aceitarTermos();
+                    hideTermosModal();
+                    showToast('✅ Termos de uso aceitos!', 'success');
+                    
+                    // Atualizar menu
+                    setTimeout(() => {
+                        updateUserMenuContent();
+                    }, 300);
+                }
+            };
+        }
+    }
+}
+
+function hideTermosModal() {
+    const modal = document.getElementById('termos-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+}
+
+function aceitarTermos() {
+    if (!window.currentUser) return false;
+    
+    window.termosAceitos = true;
+    
+    // Salvar aceitação para este usuário
+    if (window.currentUser.id) {
+        localStorage.setItem(`reputai_termos_${window.currentUser.id}`, 'true');
+        
+        // Atualizar usuário atual
+        if (window.currentUser) {
+            window.currentUser.termosAceitos = true;
+            localStorage.setItem('reputai_user', JSON.stringify(window.currentUser));
+        }
+    }
+    
+    console.log('✅ Termos de uso aceitos por:', window.currentUser.email);
+    return true;
+}
+
+// ==================== LOGIN SOCIAL ====================
+async function handleGoogleLogin() {
+    showToast('Conectando com Google...', 'info');
+    
+    if (typeof loginWithGoogle === 'function') {
+        const result = await loginWithGoogle();
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            hideAuthModal();
+            
+            setTimeout(() => {
+                updateUserInterface();
+                
+                // Verificar termos de uso
+                if (!window.termosAceitos) {
+                    setTimeout(() => {
+                        showTermosModal();
+                    }, 1000);
+                }
+            }, 500);
+        } else {
+            showToast(result.message, 'error');
+        }
+    } else {
+        showToast('Login com Google não disponível', 'error');
+    }
+}
+
+async function handleFacebookLogin() {
+    showToast('Conectando com Facebook...', 'info');
+    
+    if (typeof loginWithFacebook === 'function') {
+        const result = await loginWithFacebook();
+        
+        if (result.success) {
+            showToast(result.message, 'success');
+            hideAuthModal();
+            
+            setTimeout(() => {
+                updateUserInterface();
+                
+                // Verificar termos de uso
+                if (!window.termosAceitos) {
+                    setTimeout(() => {
+                        showTermosModal();
+                    }, 1000);
+                }
+            }, 500);
+        } else {
+            showToast(result.message, 'error');
+        }
+    } else {
+        showToast('Login com Facebook não disponível', 'error');
+    }
+}
+
+function addSocialLoginButtons() {
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    
+    const socialButtonsHTML = `
+        <div class="social-login" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--gray-light);">
+            <p style="color: var(--gray); margin-bottom: 10px; text-align: center;">Ou entre com:</p>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="handleGoogleLogin()" style="flex: 1; background: #DB4437; color: white; border: none; padding: 10px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500;">
+                    <i class="fab fa-google"></i> Google
+                </button>
+                <button onclick="handleFacebookLogin()" style="flex: 1; background: #4267B2; color: white; border: none; padding: 10px; border-radius: var(--radius); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500;">
+                    <i class="fab fa-facebook-f"></i> Facebook
+                </button>
+            </div>
+        </div>
+    `;
+    
+    if (loginTab && !loginTab.querySelector('.social-login')) {
+        loginTab.insertAdjacentHTML('beforeend', socialButtonsHTML);
+    }
+    
+    if (registerTab && !registerTab.querySelector('.social-login')) {
+        registerTab.insertAdjacentHTML('beforeend', socialButtonsHTML);
+    }
+}
+
+// ==================== FUNÇÕES AUXILIARES ====================
+function logout() {
+    if (confirm('Tem certeza que deseja sair?')) {
+        logoutUser();
+    }
+}
+
+// Funções administrativas
+function showAdminPanel() {
+    showToast('Painel administrativo em desenvolvimento', 'info');
+}
+
+function manageCompanies() {
+    showToast('Gerenciador de empresas em desenvolvimento', 'info');
+}
+
+function viewDenuncias() {
+    showDenunciasPanel();
+}
+
+function viewStatistics() {
+    showToast('Estatísticas em desenvolvimento', 'info');
 }
 
 function showMyEvaluations() {
-    if (!currentUser) return;
+    showToast('Minhas avaliações em desenvolvimento', 'info');
+}
+
+// ==================== PAINEL DE DENÚNCIAS ====================
+function showDenunciasPanel() {
+    const denuncias = JSON.parse(localStorage.getItem('reputai_denuncias') || '[]');
+    const avaliacoes = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
     
-    // Obter avaliações do usuário atual
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const userEvaluations = evaluations.filter(eval => eval.userId === currentUser.id);
+    let denunciasHTML = '';
     
-    if (userEvaluations.length === 0) {
-        const modalContent = `
-            <div style="padding: 2rem; text-align: center;">
-                <i class="fas fa-star" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
-                <h3 style="color: var(--dark); margin-bottom: 0.5rem;">Nenhuma avaliação ainda</h3>
-                <p style="color: var(--gray);">Você ainda não avaliou nenhuma empresa.</p>
-                <button onclick="closeModal()" style="margin-top: 1rem; background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer;">
-                    Fechar
-                </button>
+    if (denuncias.length === 0) {
+        denunciasHTML = `
+            <div style="text-align: center; padding: 3rem; color: var(--gray);">
+                <i class="fas fa-flag" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <h3>Nenhuma denúncia pendente</h3>
+                <p>Todas as denúncias foram resolvidas.</p>
             </div>
         `;
-        
-        showModal(modalContent);
-        return;
+    } else {
+        denunciasHTML = denuncias.map(denuncia => {
+            const avaliacao = avaliacoes.find(a => a.id === denuncia.avaliacaoId);
+            const statusColor = denuncia.status === 'pendente' ? '#f59e0b' : 
+                               denuncia.status === 'removida' ? '#dc2626' : 
+                               denuncia.status === 'mantida' ? '#10b981' : '#64748b';
+            
+            return `
+                <div style="background: white; border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; border-left: 4px solid ${statusColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong>${denuncia.empresa}</strong>
+                            <div style="color: var(--gray); font-size: 0.9rem; margin-top: 5px;">
+                                Avaliação por: ${denuncia.usuario}
+                            </div>
+                            ${avaliacao ? `
+                                <div style="margin-top: 10px; padding: 10px; background: var(--light); border-radius: 6px;">
+                                    <strong>Avaliação:</strong>
+                                    <p style="margin: 5px 0; color: var(--dark);">${avaliacao.text}</p>
+                                    <div style="color: #FFD700; font-size: 14px;">
+                                        ${'★'.repeat(avaliacao.rating)}${'☆'.repeat(5 - avaliacao.rating)}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem;">
+                                ${denuncia.status}
+                            </span>
+                            <div style="color: var(--gray); font-size: 0.8rem; margin-top: 5px;">
+                                ${new Date(denuncia.data).toLocaleDateString('pt-BR')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        ${denuncia.status === 'pendente' ? `
+                            <button onclick="resolverDenuncia(${denuncia.id}, 'removida')" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                                <i class="fas fa-trash"></i> Remover Avaliação
+                            </button>
+                            <button onclick="resolverDenuncia(${denuncia.id}, 'mantida')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                                <i class="fas fa-check"></i> Manter Avaliação
+                            </button>
+                        ` : `
+                            <button onclick="verDetalhesDenuncia(${denuncia.id})" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                                <i class="fas fa-eye"></i> Ver Detalhes
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
     
     const modalContent = `
-        <div style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="margin: 0; color: var(--dark);">
-                    Minhas Avaliações (${userEvaluations.length})
-                </h3>
-            </div>
+        <div style="max-width: 800px; max-height: 80vh; overflow-y: auto; padding: 20px;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--dark);">
+                <i class="fas fa-flag"></i> Painel de Denúncias
+                <span style="background: #f59e0b; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.9rem; margin-left: 10px;">
+                    ${denuncias.filter(d => d.status === 'pendente').length} pendentes
+                </span>
+            </h3>
             
-            <div style="padding: 1.5rem;">
-                ${userEvaluations.map(eval => {
-                    const company = companies.find(c => c.id === eval.companyId);
-                    return `
-                        <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <h4 style="margin: 0; color: var(--dark);">${company?.name || 'Empresa desconhecida'}</h4>
-                                <div style="color: #FFD700;">
-                                    ${'★'.repeat(eval.rating)}${'☆'.repeat(5 - eval.rating)}
-                                </div>
-                            </div>
-                            <p style="color: var(--text); margin-bottom: 0.5rem; font-size: 0.95rem;">${eval.text}</p>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <small style="color: var(--gray);">
-                                    ${new Date(eval.date).toLocaleDateString('pt-BR')}
-                                </small>
-                                <button onclick="deleteEvaluation(${eval.id})" style="background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-                                    Excluir
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
+            ${denunciasHTML}
             
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); text-align: center;">
-                <button onclick="closeModal()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer;">
-                    Fechar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-    toggleUserMenu();
-}
-
-function deleteEvaluation(evaluationId) {
-    if (!confirm('Tem certeza que deseja excluir esta avaliação?')) return;
-    
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const updatedEvaluations = evaluations.filter(e => e.id !== evaluationId);
-    
-    localStorage.setItem('reputai_evaluations', JSON.stringify(updatedEvaluations));
-    showToast('Avaliação excluída com sucesso', 'success');
-    
-    // Recarregar minhas avaliações
-    setTimeout(() => {
-        showMyEvaluations();
-    }, 500);
-}
-
-function logout() {
-    if (confirm('Tem certeza que deseja sair?')) {
-        currentUser = null;
-        localStorage.removeItem('reputai_user');
-        
-        showToast('Você saiu da sua conta', 'info');
-        updateUserInterface();
-        toggleUserMenu();
-    }
-}
-
-// ==================== PAINEL ADMINISTRATIVO ====================
-function showAdminPanelFromAuth() {
-    if (!currentUser || !currentUser.isAdmin) {
-        showToast('Acesso negado', 'error');
-        return;
-    }
-    
-    // Coletar estatísticas
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const users = JSON.parse(localStorage.getItem('reputai_users') || '[]');
-    
-    const totalCompanies = companies.length;
-    const totalEvaluations = evaluations.length;
-    const totalUsers = users.length + 1; // +1 para admin
-    
-    // Empresa mais avaliada
-    let mostReviewed = null;
-    if (companies.length > 0) {
-        mostReviewed = companies.reduce((prev, current) => 
-            (prev.reviewCount || 0) > (current.reviewCount || 0) ? prev : current
-        );
-    }
-    
-    // Melhor avaliação
-    let bestRated = null;
-    const companiesWithReviews = companies.filter(c => (c.reviewCount || 0) > 0);
-    if (companiesWithReviews.length > 0) {
-        bestRated = companiesWithReviews.reduce((prev, current) => 
-            (prev.averageRating || 0) > (current.averageRating || 0) ? prev : current
-        );
-    }
-    
-    const modalContent = `
-        <div style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-            <div style="padding: 2rem; border-bottom: 2px solid var(--gray-light);">
-                <h2 style="margin: 0; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-crown" style="color: #f59e0b;"></i>
-                    Painel Administrativo
-                </h2>
-                <p style="color: var(--gray); margin-top: 5px;">
-                    Último acesso: ${new Date().toLocaleString('pt-BR')}
-                </p>
-            </div>
-            
-            <div style="padding: 2rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                    <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 1.5rem; border-radius: var(--radius); text-align: center;">
-                        <div style="font-size: 2.5rem; font-weight: bold;">${totalCompanies}</div>
-                        <div style="font-size: 0.9rem; opacity: 0.9;">Empresas</div>
-                    </div>
-                    
-                    <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 1.5rem; border-radius: var(--radius); text-align: center;">
-                        <div style="font-size: 2.5rem; font-weight: bold;">${totalEvaluations}</div>
-                        <div style="font-size: 0.9rem; opacity: 0.9;">Avaliações</div>
-                    </div>
-                    
-                    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 1.5rem; border-radius: var(--radius); text-align: center;">
-                        <div style="font-size: 2.5rem; font-weight: bold;">${totalUsers}</div>
-                        <div style="font-size: 0.9rem; opacity: 0.9;">Usuários</div>
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                    ${bestRated ? `
-                        <div style="background: var(--light); padding: 1.5rem; border-radius: var(--radius);">
-                            <h4 style="margin-bottom: 1rem; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-star" style="color: #FFD700;"></i>
-                                Melhor Avaliada
-                            </h4>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #2563eb); 
-                                          color: white; border-radius: 12px; display: flex; align-items: center; 
-                                          justify-content: center; font-weight: bold; font-size: 1.2rem;">
-                                    ${bestRated.logo || bestRated.name.substring(0, 2)}
-                                </div>
-                                <div>
-                                    <strong>${bestRated.name}</strong>
-                                    <div style="color: #FFD700; margin: 5px 0; font-size: 1.2rem;">
-                                        ${'★'.repeat(Math.floor(bestRated.averageRating || 0))}
-                                        ${'☆'.repeat(5 - Math.floor(bestRated.averageRating || 0))}
-                                    </div>
-                                    <div style="color: var(--gray);">
-                                        ${(bestRated.averageRating || 0).toFixed(1)}/5 • ${bestRated.reviewCount} avaliações
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    ${mostReviewed && mostReviewed.reviewCount > 0 ? `
-                        <div style="background: var(--light); padding: 1.5rem; border-radius: var(--radius);">
-                            <h4 style="margin-bottom: 1rem; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-comments" style="color: var(--primary);"></i>
-                                Mais Avaliada
-                            </h4>
-                            <div style="display: flex; align-items: center; gap: 1rem;">
-                                <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #2563eb); 
-                                          color: white; border-radius: 12px; display: flex; align-items: center; 
-                                          justify-content: center; font-weight: bold; font-size: 1.2rem;">
-                                    ${mostReviewed.logo || mostReviewed.name.substring(0, 2)}
-                                </div>
-                                <div>
-                                    <strong>${mostReviewed.name}</strong>
-                                    <div style="color: var(--gray); margin: 5px 0;">
-                                        ${mostReviewed.reviewCount} avaliações
-                                    </div>
-                                    <div style="color: #FFD700; font-size: 1.1rem;">
-                                        ${'★'.repeat(Math.floor(mostReviewed.averageRating || 0))}
-                                        ${'☆'.repeat(5 - Math.floor(mostReviewed.averageRating || 0))}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div style="margin-top: 2rem;">
-                    <h4 style="margin-bottom: 1rem; color: var(--dark);">Ações Administrativas</h4>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <button onclick="manageCompaniesFromAuth()" style="flex: 1; min-width: 150px; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-building"></i> Empresas
-                        </button>
-                        <button onclick="viewStatisticsFromAuth()" style="flex: 1; min-width: 150px; background: var(--success); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-chart-bar"></i> Estatísticas
-                        </button>
-                        <button onclick="manageUsersFromAuth()" style="flex: 1; min-width: 150px; background: var(--warning); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-users"></i> Usuários
-                        </button>
-                        <button onclick="exportDataFromAuth()" style="flex: 1; min-width: 150px; background: var(--danger); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-download"></i> Exportar
-                        </button>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem; padding: 1.5rem; background: var(--light); border-radius: var(--radius);">
-                    <h4 style="margin-bottom: 1rem; color: var(--dark);">Ações Rápidas</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        <button onclick="addCompanyAdmin()" style="background: white; border: 2px solid var(--primary); color: var(--primary); padding: 10px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-plus"></i> Nova Empresa
-                        </button>
-                        <button onclick="clearAllData()" style="background: white; border: 2px solid var(--danger); color: var(--danger); padding: 10px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-trash"></i> Limpar Dados
-                        </button>
-                        <button onclick="generateTestData()" style="background: white; border: 2px solid var(--success); color: var(--success); padding: 10px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-vial"></i> Dados de Teste
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-    toggleUserMenu();
-}
-
-// ==================== FUNÇÕES DO PAINEL ADMIN ====================
-function manageCompaniesFromAuth() {
-    if (!currentUser || !currentUser.isAdmin) {
-        showToast('Acesso negado', 'error');
-        return;
-    }
-    
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    
-    const modalContent = `
-        <div style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light); display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-building"></i>
-                    Gerenciar Empresas (${companies.length})
-                </h3>
-                <button onclick="addCompanyAdmin()" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                    <i class="fas fa-plus"></i> Nova
-                </button>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                ${companies.length === 0 ? 
-                    '<div style="text-align: center; padding: 3rem; color: var(--gray);">Nenhuma empresa cadastrada</div>' : 
-                    companies.map(company => `
-                        <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                            <div style="display: flex; align-items: center; gap: 15px;">
-                                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                    ${company.logo || company.name.substring(0, 2)}
-                                </div>
-                                <div>
-                                    <strong>${company.name}</strong>
-                                    <div style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                        ${company.sector} • ${company.location}
-                                    </div>
-                                    <div style="font-size: 0.85rem; color: var(--gray); margin-top: 5px;">
-                                        ${company.reviewCount || 0} avaliações • ${(company.averageRating || 0).toFixed(1)}/5
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <button onclick="editCompanyAdmin(${company.id})" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="deleteCompanyAdmin(${company.id})" style="background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-left: 5px;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')
-                }
-            </div>
-            
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); text-align: center;">
-                <button onclick="showAdminPanelFromAuth()" style="background: var(--gray-light); border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; margin-right: 10px;">
-                    <i class="fas fa-arrow-left"></i> Voltar
-                </button>
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--gray-light);">
                 <button onclick="closeModal()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer;">
                     Fechar
                 </button>
@@ -670,631 +904,148 @@ function manageCompaniesFromAuth() {
     showModal(modalContent);
 }
 
-function viewStatisticsFromAuth() {
-    if (!currentUser || !currentUser.isAdmin) {
-        showToast('Acesso negado', 'error');
-        return;
-    }
+function resolverDenuncia(denunciaId, acao) {
+    const denuncias = JSON.parse(localStorage.getItem('reputai_denuncias') || '[]');
+    const index = denuncias.findIndex(d => d.id === denunciaId);
     
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const users = JSON.parse(localStorage.getItem('reputai_users') || '[]');
-    
-    // Estatísticas por setor
-    const sectorStats = {};
-    companies.forEach(company => {
-        sectorStats[company.sector] = (sectorStats[company.sector] || 0) + 1;
-    });
-    
-    // Distribuição de avaliações
-    const ratingDistribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-    evaluations.forEach(eval => {
-        const rating = Math.round(eval.rating);
-        ratingDistribution[rating] = (ratingDistribution[rating] || 0) + 1;
-    });
-    
-    // Crescimento de usuários
-    const userGrowth = {};
-    users.forEach(user => {
-        const date = new Date(user.joined).toLocaleDateString('pt-BR');
-        userGrowth[date] = (userGrowth[date] || 0) + 1;
-    });
-    
-    const modalContent = `
-        <div style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="margin: 0; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-chart-bar"></i>
-                    Estatísticas Detalhadas
-                </h3>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                    <div>
-                        <h4 style="margin-bottom: 1rem; color: var(--dark);">Empresas por Setor</h4>
-                        ${Object.entries(sectorStats).map(([sector, count]) => `
-                            <div style="margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                    <span>${sector}</span>
-                                    <span>${count}</span>
-                                </div>
-                                <div style="height: 8px; background: var(--gray-light); border-radius: 4px; overflow: hidden;">
-                                    <div style="height: 100%; width: ${(count / companies.length) * 100}%; background: var(--primary);"></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <div>
-                        <h4 style="margin-bottom: 1rem; color: var(--dark);">Distribuição de Avaliações</h4>
-                        ${evaluations.length > 0 ? 
-                            Object.entries(ratingDistribution).map(([rating, count]) => `
-                                <div style="margin-bottom: 10px;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <span>${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}</span>
-                                        <span>${count} (${((count / evaluations.length) * 100).toFixed(1)}%)</span>
-                                    </div>
-                                    <div style="height: 8px; background: var(--gray-light); border-radius: 4px; overflow: hidden;">
-                                        <div style="height: 100%; width: ${(count / evaluations.length) * 100}%; background: #FFD700;"></div>
-                                    </div>
-                                </div>
-                            `).join('') :
-                            '<p style="color: var(--gray);">Nenhuma avaliação ainda</p>'
-                        }
-                    </div>
-                </div>
-                
-                <div style="margin-top: 2rem;">
-                    <h4 style="margin-bottom: 1rem; color: var(--dark);">Resumo Geral</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
-                        <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--radius);">
-                            <div style="font-size: 2rem; font-weight: bold; color: var(--primary);">${companies.length}</div>
-                            <div style="color: var(--gray);">Empresas</div>
-                        </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--radius);">
-                            <div style="font-size: 2rem; font-weight: bold; color: var(--success);">${evaluations.length}</div>
-                            <div style="color: var(--gray);">Avaliações</div>
-                        </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--radius);">
-                            <div style="font-size: 2rem; font-weight: bold; color: var(--warning);">${users.length + 1}</div>
-                            <div style="color: var(--gray);">Usuários</div>
-                        </div>
-                        <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--radius);">
-                            <div style="font-size: 2rem; font-weight: bold; color: #FFD700;">
-                                ${evaluations.length > 0 ? (evaluations.reduce((sum, e) => sum + e.rating, 0) / evaluations.length).toFixed(1) : '0.0'}
-                            </div>
-                            <div style="color: var(--gray);">Média Geral</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); text-align: center;">
-                <button onclick="showAdminPanelFromAuth()" style="background: var(--gray-light); border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer;">
-                    <i class="fas fa-arrow-left"></i> Voltar ao Painel
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-}
-
-function manageUsersFromAuth() {
-    if (!currentUser || !currentUser.isAdmin) {
-        showToast('Acesso negado', 'error');
-        return;
-    }
-    
-    const users = JSON.parse(localStorage.getItem('reputai_users') || '[]');
-    
-    const modalContent = `
-        <div style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="margin: 0; color: var(--dark); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-users"></i>
-                    Gerenciar Usuários (${users.length})
-                </h3>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                ${users.length === 0 ? 
-                    '<div style="text-align: center; padding: 3rem; color: var(--gray);">Nenhum usuário cadastrado</div>' : 
-                    users.map(user => `
-                        <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 15px;">
-                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                        ${user.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <strong>${user.name}</strong>
-                                        <div style="font-size: 0.9rem; color: var(--gray); margin-top: 2px;">
-                                            ${user.email}
-                                        </div>
-                                        <div style="font-size: 0.8rem; color: var(--gray); margin-top: 2px;">
-                                            Cadastrado em: ${new Date(user.joined).toLocaleDateString('pt-BR')}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <button onclick="deleteUserAdmin(${user.id})" style="background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-                                        <i class="fas fa-trash"></i> Remover
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')
-                }
-            </div>
-            
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); text-align: center;">
-                <button onclick="showAdminPanelFromAuth()" style="background: var(--gray-light); border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer;">
-                    <i class="fas fa-arrow-left"></i> Voltar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-}
-
-function exportDataFromAuth() {
-    if (!currentUser || !currentUser.isAdmin) {
-        showToast('Acesso negado', 'error');
-        return;
-    }
-    
-    const data = {
-        companies: JSON.parse(localStorage.getItem('reputai_companies') || '[]'),
-        evaluations: JSON.parse(localStorage.getItem('reputai_evaluations') || '[]'),
-        users: JSON.parse(localStorage.getItem('reputai_users') || '[]'),
-        exportDate: new Date().toISOString(),
-        exportedBy: currentUser.name
-    };
-    
-    const dataStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reputai-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showToast('Dados exportados com sucesso!', 'success');
-}
-
-// ==================== FUNÇÕES ADMINISTRATIVAS ====================
-function editCompanyAdmin(companyId) {
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const company = companies.find(c => c.id === companyId);
-    
-    if (!company) {
-        showToast('Empresa não encontrada', 'error');
-        return;
-    }
-    
-    const modalContent = `
-        <div style="max-width: 500px;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="margin: 0; color: var(--dark);">
-                    <i class="fas fa-edit"></i> Editar Empresa
-                </h3>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome da Empresa</label>
-                    <input type="text" id="edit-company-name" value="${company.name}" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Setor</label>
-                    <select id="edit-company-sector" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                        <option value="Tecnologia" ${company.sector === 'Tecnologia' ? 'selected' : ''}>Tecnologia</option>
-                        <option value="Finanças" ${company.sector === 'Finanças' ? 'selected' : ''}>Finanças</option>
-                        <option value="Saúde" ${company.sector === 'Saúde' ? 'selected' : ''}>Saúde</option>
-                        <option value="Varejo" ${company.sector === 'Varejo' ? 'selected' : ''}>Varejo</option>
-                        <option value="Serviços" ${company.sector === 'Serviços' ? 'selected' : ''}>Serviços</option>
-                        <option value="Energia" ${company.sector === 'Energia' ? 'selected' : ''}>Energia</option>
-                        <option value="Educação" ${company.sector === 'Educação' ? 'selected' : ''}>Educação</option>
-                        <option value="Outros" ${company.sector === 'Outros' ? 'selected' : ''}>Outros</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Localização</label>
-                    <input type="text" id="edit-company-location" value="${company.location}" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Descrição</label>
-                    <textarea id="edit-company-description" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius); height: 100px;">${company.description}</textarea>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Latitude</label>
-                        <input type="number" id="edit-company-lat" value="${company.lat}" step="0.0001" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Longitude</label>
-                        <input type="number" id="edit-company-lng" value="${company.lng}" step="0.0001" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Avaliação Média</label>
-                        <input type="number" id="edit-company-rating" value="${company.averageRating}" min="0" max="5" step="0.1" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                    </div>
-                    <div>
-                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nº de Avaliações</label>
-                        <input type="number" id="edit-company-reviewcount" value="${company.reviewCount}" min="0" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                    </div>
-                </div>
-            </div>
-            
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); display: flex; gap: 1rem;">
-                <button onclick="saveCompanyEdit(${companyId})" style="flex: 1; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                    <i class="fas fa-save"></i> Salvar
-                </button>
-                <button onclick="manageCompaniesFromAuth()" style="background: var(--gray-light); border: none; padding: 12px; border-radius: var(--radius); cursor: pointer;">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-}
-
-function saveCompanyEdit(companyId) {
-    const name = document.getElementById('edit-company-name').value.trim();
-    const sector = document.getElementById('edit-company-sector').value;
-    const location = document.getElementById('edit-company-location').value.trim();
-    const description = document.getElementById('edit-company-description').value.trim();
-    const lat = parseFloat(document.getElementById('edit-company-lat').value);
-    const lng = parseFloat(document.getElementById('edit-company-lng').value);
-    const averageRating = parseFloat(document.getElementById('edit-company-rating').value);
-    const reviewCount = parseInt(document.getElementById('edit-company-reviewcount').value);
-    
-    if (!name || !sector || !location) {
-        showToast('Preencha os campos obrigatórios', 'error');
-        return;
-    }
-    
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const companyIndex = companies.findIndex(c => c.id === companyId);
-    
-    if (companyIndex === -1) {
-        showToast('Empresa não encontrada', 'error');
-        return;
-    }
-    
-    companies[companyIndex] = {
-        ...companies[companyIndex],
-        name,
-        sector,
-        location,
-        description,
-        lat,
-        lng,
-        averageRating,
-        reviewCount
-    };
-    
-    localStorage.setItem('reputai_companies', JSON.stringify(companies));
-    
-    // Atualizar a lista global de empresas
-    if (typeof window.companies !== 'undefined') {
-        window.companies = companies;
-        if (typeof displayCompanies === 'function') displayCompanies(companies);
-        if (typeof addCompaniesToMap === 'function') addCompaniesToMap(companies);
-    }
-    
-    showToast('Empresa atualizada com sucesso!', 'success');
-    manageCompaniesFromAuth();
-}
-
-function deleteCompanyAdmin(companyId) {
-    if (!confirm('Tem certeza que deseja excluir esta empresa? Todas as avaliações relacionadas também serão excluídas.')) return;
-    
-    // Remover empresa
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const updatedCompanies = companies.filter(c => c.id !== companyId);
-    localStorage.setItem('reputai_companies', JSON.stringify(updatedCompanies));
-    
-    // Remover avaliações da empresa
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const updatedEvaluations = evaluations.filter(e => e.companyId !== companyId);
-    localStorage.setItem('reputai_evaluations', JSON.stringify(updatedEvaluations));
-    
-    // Atualizar a lista global de empresas
-    if (typeof window.companies !== 'undefined') {
-        window.companies = updatedCompanies;
-        if (typeof displayCompanies === 'function') displayCompanies(updatedCompanies);
-        if (typeof addCompaniesToMap === 'function') addCompaniesToMap(updatedCompanies);
-    }
-    
-    showToast('Empresa excluída com sucesso', 'success');
-    manageCompaniesFromAuth();
-}
-
-function addCompanyAdmin() {
-    const modalContent = `
-        <div style="max-width: 500px;">
-            <div style="padding: 1.5rem; border-bottom: 2px solid var(--gray-light);">
-                <h3 style="margin: 0; color: var(--dark);">
-                    <i class="fas fa-plus"></i> Adicionar Nova Empresa
-                </h3>
-            </div>
-            
-            <div style="padding: 1.5rem;">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Nome da Empresa *</label>
-                    <input type="text" id="new-company-name" placeholder="Nome da empresa" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Setor *</label>
-                    <select id="new-company-sector" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                        <option value="">Selecione um setor</option>
-                        <option value="Tecnologia">Tecnologia</option>
-                        <option value="Finanças">Finanças</option>
-                        <option value="Saúde">Saúde</option>
-                        <option value="Varejo">Varejo</option>
-                        <option value="Serviços">Serviços</option>
-                        <option value="Energia">Energia</option>
-                        <option value="Educação">Educação</option>
-                        <option value="Outros">Outros</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Localização *</label>
-                    <input type="text" id="new-company-location" placeholder="Cidade, Estado" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Descrição</label>
-                    <textarea id="new-company-description" placeholder="Descrição da empresa" style="width: 100%; padding: 10px; border: 2px solid var(--gray-light); border-radius: var(--radius); height: 100px;"></textarea>
-                </div>
-            </div>
-            
-            <div style="padding: 1rem; border-top: 1px solid var(--gray-light); display: flex; gap: 1rem;">
-                <button onclick="saveNewCompany()" style="flex: 1; background: var(--primary); color: white; border: none; padding: 12px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                    <i class="fas fa-save"></i> Salvar
-                </button>
-                <button onclick="manageCompaniesFromAuth()" style="background: var(--gray-light); border: none; padding: 12px; border-radius: var(--radius); cursor: pointer;">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-}
-
-function saveNewCompany() {
-    const name = document.getElementById('new-company-name').value.trim();
-    const sector = document.getElementById('new-company-sector').value;
-    const location = document.getElementById('new-company-location').value.trim();
-    const description = document.getElementById('new-company-description').value.trim() || "Empresa cadastrada pelo administrador";
-    
-    if (!name || !sector || !location) {
-        showToast('Preencha os campos obrigatórios', 'error');
-        return;
-    }
-    
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    
-    const newCompany = {
-        id: companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1,
-        name: name,
-        sector: sector,
-        location: location,
-        lat: -15 + (Math.random() - 0.5) * 20,
-        lng: -50 + (Math.random() - 0.5) * 20,
-        logo: name.substring(0, 2).toUpperCase(),
-        description: description,
-        averageRating: 0,
-        reviewCount: 0
-    };
-    
-    companies.push(newCompany);
-    localStorage.setItem('reputai_companies', JSON.stringify(companies));
-    
-    // Atualizar a lista global de empresas
-    if (typeof window.companies !== 'undefined') {
-        window.companies = companies;
-        if (typeof displayCompanies === 'function') displayCompanies(companies);
-        if (typeof addCompaniesToMap === 'function') addCompaniesToMap(companies);
-    }
-    
-    showToast('Empresa adicionada com sucesso!', 'success');
-    manageCompaniesFromAuth();
-}
-
-function deleteUserAdmin(userId) {
-    if (!confirm('Tem certeza que deseja excluir este usuário? Todas as avaliações do usuário também serão excluídas.')) return;
-    
-    // Remover usuário
-    const users = JSON.parse(localStorage.getItem('reputai_users') || '[]');
-    const updatedUsers = users.filter(u => u.id !== userId);
-    localStorage.setItem('reputai_users', JSON.stringify(updatedUsers));
-    
-    // Remover avaliações do usuário
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const updatedEvaluations = evaluations.filter(e => e.userId !== userId);
-    localStorage.setItem('reputai_evaluations', JSON.stringify(updatedEvaluations));
-    
-    showToast('Usuário excluído com sucesso', 'success');
-    manageUsersFromAuth();
-}
-
-function clearAllData() {
-    if (!confirm('⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\nTem certeza que deseja limpar TODOS os dados?\n\nIsso excluirá todas as empresas, avaliações e usuários (exceto o admin).')) return;
-    
-    // Manter apenas o admin
-    localStorage.removeItem('reputai_companies');
-    localStorage.removeItem('reputai_evaluations');
-    localStorage.removeItem('reputai_users');
-    
-    // Recarregar dados iniciais
-    if (typeof loadCompanies === 'function') loadCompanies();
-    
-    showToast('Todos os dados foram limpos', 'success');
-    showAdminPanelFromAuth();
-}
-
-function generateTestData() {
-    if (!confirm('Deseja gerar dados de teste? Isso adicionará empresas e avaliações de exemplo.')) return;
-    
-    // Empresas de teste
-    const testCompanies = [
-        {
-            id: 1001,
-            name: "Tech Solutions BR",
-            sector: "Tecnologia",
-            location: "São Paulo, SP",
-            lat: -23.5505,
-            lng: -46.6333,
-            description: "Empresa de tecnologia inovadora",
-            averageRating: 4.5,
-            reviewCount: 42
-        },
-        {
-            id: 1002,
-            name: "Health Care Plus",
-            sector: "Saúde",
-            location: "Rio de Janeiro, RJ",
-            lat: -22.9068,
-            lng: -43.1729,
-            description: "Rede de saúde premium",
-            averageRating: 4.2,
-            reviewCount: 28
-        },
-        {
-            id: 1003,
-            name: "Eco Varejo",
-            sector: "Varejo",
-            location: "Curitiba, PR",
-            lat: -25.4284,
-            lng: -49.2733,
-            description: "Varejo sustentável",
-            averageRating: 4.7,
-            reviewCount: 35
+    if (index !== -1) {
+        denuncias[index].status = acao;
+        denuncias[index].resolvidaEm = new Date().toISOString();
+        denuncias[index].resolvidaPor = window.currentUser?.name || 'Administrador';
+        
+        if (acao === 'removida') {
+            // Remover a avaliação
+            removerAvaliacaoOfensiva(denuncias[index].avaliacaoId);
         }
+        
+        localStorage.setItem('reputai_denuncias', JSON.stringify(denuncias));
+        
+        showToast(`Denúncia ${acao === 'removida' ? 'removida' : 'mantida'} com sucesso`, 'success');
+        
+        // Atualizar painel
+        setTimeout(() => {
+            showDenunciasPanel();
+            updateDenunciasCount();
+        }, 500);
+    }
+}
+
+function verDetalhesDenuncia(denunciaId) {
+    showToast('Detalhes da denúncia em desenvolvimento', 'info');
+}
+
+// Funções de moderação
+function verificarConteudoOfensivo(texto) {
+    const PALAVRAS_OFENSIVAS = [
+        'imbecil', 'idiota', 'burro', 'estúpido', 'retardado', 'cretino',
+        'vagabundo', 'vagaba', 'piranha', 'puta', 'prostituta', 'meretriz',
+        'fdp', 'filho da puta', 'vai se foder', 'vai tomar no cu', 'vtnc',
+        'cu', 'caralho', 'porra', 'buceta', 'xoxota', 'pinto', 'pau'
     ];
     
-    // Avaliações de teste
-    const testEvaluations = [
-        {
-            id: 1001,
-            companyId: 1001,
-            userId: 100,
-            userName: "Ana Silva",
-            rating: 5,
-            text: "Excelente ambiente de trabalho, muita inovação e oportunidades de crescimento.",
-            date: new Date().toISOString()
-        },
-        {
-            id: 1002,
-            companyId: 1002,
-            userId: 101,
-            userName: "Carlos Santos",
-            rating: 4,
-            text: "Boa empresa, benefícios interessantes, mas carga horária pode ser pesada.",
-            date: new Date().toISOString()
-        }
-    ];
+    if (!texto || typeof texto !== 'string') return false;
     
-    // Adicionar empresas de teste
-    const existingCompanies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const allCompanies = [...existingCompanies, ...testCompanies];
-    localStorage.setItem('reputai_companies', JSON.stringify(allCompanies));
+    const textoLower = texto.toLowerCase();
+    return PALAVRAS_OFENSIVAS.some(palavra => {
+        const regex = new RegExp(`\\b${palavra.toLowerCase()}\\b`, 'i');
+        return regex.test(textoLower);
+    });
+}
+
+function marcarAvaliacaoComoDenunciada(avaliacaoId) {
+    const avaliacoes = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
+    const index = avaliacoes.findIndex(a => a.id === avaliacaoId);
     
-    // Adicionar avaliações de teste
-    const existingEvaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const allEvaluations = [...existingEvaluations, ...testEvaluations];
-    localStorage.setItem('reputai_evaluations', JSON.stringify(allEvaluations));
-    
-    // Atualizar a lista global de empresas
-    if (typeof window.companies !== 'undefined') {
-        window.companies = allCompanies;
-        if (typeof displayCompanies === 'function') displayCompanies(allCompanies);
-        if (typeof addCompaniesToMap === 'function') addCompaniesToMap(allCompanies);
+    if (index !== -1) {
+        avaliacoes[index].denunciada = true;
+        avaliacoes[index].denunciadaEm = new Date().toISOString();
+        localStorage.setItem('reputai_evaluations', JSON.stringify(avaliacoes));
+        
+        return true;
     }
+    return false;
+}
+
+function removerAvaliacaoOfensiva(avaliacaoId) {
+    const avaliacoes = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
+    const index = avaliacoes.findIndex(a => a.id === avaliacaoId);
     
-    showToast('Dados de teste gerados com sucesso!', 'success');
-    showAdminPanelFromAuth();
+    if (index !== -1) {
+        avaliacoes[index].removida = true;
+        avaliacoes[index].removidaEm = new Date().toISOString();
+        avaliacoes[index].removidaPor = 'Sistema de moderação';
+        localStorage.setItem('reputai_evaluations', JSON.stringify(avaliacoes));
+        
+        return true;
+    }
+    return false;
 }
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar login ao carregar
-    checkUserLogin();
+    console.log('🔐 [auth] Interface de autenticação inicializada');
+    
+    // Configurar botão de login
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        loginBtn.onclick = showAuthModal;
+    }
     
     // Configurar eventos do modal
     const modal = document.getElementById('auth-modal');
     if (modal) {
         modal.addEventListener('click', function(e) {
-            if (e.target === this) hideAuthModal();
+            if (e.target === this) {
+                hideAuthModal();
+            }
         });
     }
     
-    // Tecla ESC fecha modais
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            hideAuthModal();
-            const customModal = document.getElementById('custom-modal');
-            if (customModal) closeModal();
-        }
-    });
-    
-    // Prevenir envio de formulário com Enter
-    const forms = document.querySelectorAll('.tab-content input');
-    forms.forEach(input => {
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (this.closest('#login-tab')) {
-                    login();
-                } else if (this.closest('#register-tab')) {
-                    register();
-                }
+    // Configurar botões de fechar
+    const closeButtons = document.querySelectorAll('.modal-close');
+    closeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const modal = this.closest('.modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
             }
         });
     });
+    
+    // Adicionar botões sociais com delay
+    setTimeout(() => {
+        addSocialLoginButtons();
+    }, 1500);
 });
 
-// ==================== EXPORTAR FUNÇÕES GLOBAIS ====================
+// ==================== EXPORTAÇÃO GLOBAL ====================
 window.showAuthModal = showAuthModal;
 window.hideAuthModal = hideAuthModal;
 window.showLoginForm = showLoginForm;
 window.showRegisterForm = showRegisterForm;
 window.login = login;
 window.register = register;
+window.updateUserInterface = updateUserInterface;
 window.toggleUserMenu = toggleUserMenu;
-window.showMyEvaluations = showMyEvaluations;
 window.logout = logout;
-window.showAdminPanelFromAuth = showAdminPanelFromAuth;
-window.manageCompaniesFromAuth = manageCompaniesFromAuth;
-window.viewStatisticsFromAuth = viewStatisticsFromAuth;
-window.manageUsersFromAuth = manageUsersFromAuth;
-window.exportDataFromAuth = exportDataFromAuth;
-window.editCompanyAdmin = editCompanyAdmin;
-window.deleteCompanyAdmin = deleteCompanyAdmin;
-window.addCompanyAdmin = addCompanyAdmin;
-window.saveNewCompany = saveNewCompany;
-window.saveCompanyEdit = saveCompanyEdit;
-window.deleteUserAdmin = deleteUserAdmin;
-window.clearAllData = clearAllData;
-window.generateTestData = generateTestData;
-window.deleteEvaluation = deleteEvaluation;
+window.handleGoogleLogin = handleGoogleLogin;
+window.handleFacebookLogin = handleFacebookLogin;
+window.addSocialLoginButtons = addSocialLoginButtons;
+window.showTermosModal = showTermosModal;
+window.hideTermosModal = hideTermosModal;
+window.aceitarTermos = aceitarTermos;
+window.showDenunciasPanel = showDenunciasPanel;
+window.resolverDenuncia = resolverDenuncia;
+window.updateDenunciasCount = updateDenunciasCount;
+window.unifiedLogin = unifiedLogin;
+window.unifiedRegister = unifiedRegister;
+window.logoutUser = logoutUser;
+window.initSessionCheck = initSessionCheck;
+window.verificarConteudoOfensivo = verificarConteudoOfensivo;
+window.marcarAvaliacaoComoDenunciada = marcarAvaliacaoComoDenunciada;
+window.removerAvaliacaoOfensiva = removerAvaliacaoOfensiva;
+
+console.log('✅ [auth] Interface de autenticação carregada');
