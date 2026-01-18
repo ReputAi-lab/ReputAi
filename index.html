@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Avaliações reais de empresas brasileiras. Encontre o melhor lugar para trabalhar baseado em experiências reais de funcionários.">
     
-    <!-- Preconnects otimizados -->
+    <!-- Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -19,71 +19,6 @@
     
     <!-- Nosso CSS -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- ========== FIREBASE CONFIG ========== -->
-    <script type="module">
-        // Configuração do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyCikJ1Cf_AS8tfKgythZdUqeyUAc96z7Eg",
-            authDomain: "reputai143.firebaseapp.com",
-            projectId: "reputai143",
-            storageBucket: "reputai143.appspot.com",
-            messagingSenderId: "127119539085",
-            appId: "1:127119539085:web:325373bf1da5a16b5c9bc4"
-        };
-
-        // Importar e inicializar Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-        
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // Testar conexão
-        console.log("🔥 Firebase conectado! Projeto:", app.options.projectId);
-        
-        // Disponibilizar globalmente para outros scripts
-        window.firebaseApp = app;
-        window.firebaseDb = db;
-        window.firebaseAuth = auth;
-        
-        // Função de fallback para evitar erros
-        window.showAdminPanel = function() {
-            console.log("Função showAdminPanel não implementada");
-        };
-        
-        // Verificar quando tudo estiver carregado
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log("✅ Firebase pronto para uso!");
-        });
-    </script>
-    <!-- ==================================== -->
-    
-    <style>
-        .aviso-home {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: var(--radius);
-            margin: 2rem auto;
-            max-width: 800px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .aviso-home h3 {
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-        }
-        
-        .aviso-home p {
-            margin-bottom: 1.5rem;
-            opacity: 0.9;
-        }
-    </style>
 </head>
 <body>
     <!-- Loading -->
@@ -91,75 +26,6 @@
         <div class="loading-spinner"></div>
         <h2>ReputAí</h2>
         <p>Carregando...</p>
-    </div>
-
-    <!-- Modal de Aviso de Avaliação -->
-    <div class="modal-overlay" id="aviso-modal" style="display: none;">
-        <div class="auth-modal" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <h2><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: Política de Avaliações</h2>
-                <p>Leia atentamente antes de prosseguir</p>
-            </div>
-            
-            <div class="tab-content" style="padding: 1.5rem;">
-                <div class="aviso-content">
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                        <i class="fas fa-check-circle" style="color: #3b82f6; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Avaliações devem ser baseadas em experiência real</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Sua avaliação deve refletir sua experiência pessoal na empresa
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <i class="fas fa-times-circle" style="color: #dc2626; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Não são permitidas avaliações copiadas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Avaliações de outros sites ou fontes externas serão removidas
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <i class="fas fa-shield-alt" style="color: #10b981; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Apenas avaliações feitas em nosso site são válidas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Este sistema aceita apenas avaliações feitas diretamente aqui
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="termos-uso" style="margin-top: 1.5rem; padding: 15px; background: #f8fafc; border-radius: var(--radius);">
-                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                            <input type="checkbox" id="concordar-avisos" style="margin-top: 5px;">
-                            <div>
-                                <label for="concordar-avisos" style="font-weight: 500; cursor: pointer;">
-                                    Concordo com os termos acima e confirmo que:
-                                </label>
-                                <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; color: var(--gray);">
-                                    <li>Esta avaliação é baseada em minha experiência pessoal</li>
-                                    <li>Não estou copiando conteúdo de outros sites</li>
-                                    <li>Estou sendo honesto e objetivo em minha avaliação</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button class="btn btn-secondary" onclick="hideAvisoModal()" style="flex: 1;">
-                        Cancelar
-                    </button>
-                    <button class="btn btn-primary" id="prosseguir-avaliacao" onclick="prosseguirAvaliacao()" style="flex: 1;" disabled>
-                        <i class="fas fa-check"></i> Concordo e Prosseguir
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Header -->
@@ -183,12 +49,10 @@
                         <li><a href="#como-funciona"><i class="fas fa-question-circle"></i> Como Funciona</a></li>
                         <li id="auth-nav-item">
                             <div class="user-menu-container">
-                                <div class="user-avatar" onclick="toggleUserMenu()" id="user-avatar" style="display: none;">
-                                    <i class="fas fa-user"></i>
-                                </div>
+                                <div class="user-avatar" id="user-avatar" style="display: none;"></div>
                                 <div class="user-menu" id="user-menu" style="display: none;"></div>
                             </div>
-                            <a href="#" class="nav-btn" onclick="showAuthModal(event)" id="login-btn">
+                            <a href="#" class="nav-btn" id="login-btn">
                                 <i class="fas fa-user"></i> Entrar
                             </a>
                         </li>
@@ -231,13 +95,13 @@
                 </div>
                 <div class="search-filters">
                     <div class="filter-tags" id="filter-tags">
-                        <span class="filter-tag" onclick="filterBySector('Tecnologia')">Tecnologia</span>
-                        <span class="filter-tag" onclick="filterBySector('Finanças')">Finanças</span>
-                        <span class="filter-tag" onclick="filterBySector('Saúde')">Saúde</span>
-                        <span class="filter-tag" onclick="filterBySector('Varejo')">Varejo</span>
-                        <span class="filter-tag" onclick="filterBySector('Serviços')">Serviços</span>
-                        <span class="filter-tag" onclick="filterBySector('Energia')">Energia</span>
-                        <span class="filter-tag" onclick="filterBySector('Educação')">Educação</span>
+                        <span class="filter-tag" data-sector="Tecnologia">Tecnologia</span>
+                        <span class="filter-tag" data-sector="Finanças">Finanças</span>
+                        <span class="filter-tag" data-sector="Saúde">Saúde</span>
+                        <span class="filter-tag" data-sector="Varejo">Varejo</span>
+                        <span class="filter-tag" data-sector="Serviços">Serviços</span>
+                        <span class="filter-tag" data-sector="Energia">Energia</span>
+                        <span class="filter-tag" data-sector="Educação">Educação</span>
                     </div>
                 </div>
                 <div class="location-status" id="location-status">
@@ -262,10 +126,10 @@
             <div class="map-container">
                 <div id="map"></div>
                 <div class="map-controls">
-                    <button class="btn-map" onclick="locateUser()">
+                    <button class="btn-map" id="locate-btn" onclick="locateUser()">
                         <i class="fas fa-crosshairs"></i> Minha Localização
                     </button>
-                    <button class="btn-map" onclick="resetMapView()">
+                    <button class="btn-map" id="reset-map-btn" onclick="resetMapView()">
                         <i class="fas fa-sync-alt"></i> Resetar Vista
                     </button>
                 </div>
@@ -287,9 +151,7 @@
                 <p>Algumas empresas avaliadas na plataforma ReputAí</p>
             </div>
             
-            <div id="companies-container" class="companies-grid">
-                <!-- Empresas serão carregadas aqui (apenas algumas) -->
-            </div>
+            <div id="companies-container" class="companies-grid"></div>
             
             <div id="no-companies" style="text-align: center; padding: 3rem; display: none;">
                 <i class="fas fa-building" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
@@ -383,7 +245,6 @@
                 </div>
             </div>
             
-            <!-- Aviso sobre página de avaliação -->
             <div class="aviso-home">
                 <h3><i class="fas fa-star"></i> Quer avaliar uma empresa?</h3>
                 <p>Clique no botão "Avaliar" no menu ou no botão abaixo para acessar nossa página completa de avaliações.</p>
@@ -430,6 +291,7 @@
     <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal">
         <div class="auth-modal">
+            <button class="modal-close">&times;</button>
             <div class="modal-header">
                 <h2>Bem-vindo ao ReputAí</h2>
                 <p>Entre para avaliar empresas</p>
@@ -438,8 +300,8 @@
             <div class="tab-content">
                 <div id="login-tab" class="tab-pane active">
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="login-email" placeholder="seu@email.com">
+                        <label>Email ou Nome de Usuário</label>
+                        <input type="text" id="login-email" placeholder="seu@email.com ou nome de usuário">
                     </div>
                     
                     <div class="form-group">
@@ -447,12 +309,29 @@
                         <input type="password" id="login-password" placeholder="Sua senha">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="login()" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary" id="login-submit-btn" onclick="login()">
                         <i class="fas fa-sign-in-alt"></i> Entrar
                     </button>
                     
+                    <div class="social-login">
+                        <p>Ou entre com:</p>
+                        <div>
+                            <button onclick="handleGoogleLogin()">
+                                <i class="fab fa-google"></i> Google
+                            </button>
+                            <button onclick="handleFacebookLogin()">
+                                <i class="fab fa-facebook-f"></i> Facebook
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Ainda não tem conta? <a href="#" onclick="showRegisterForm()">Cadastre-se</a></p>
+                        <p>Ainda não tem conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
+                        <p style="margin-top: 0.5rem;">
+                            <a href="#" id="forgot-password-link">
+                                <i class="fas fa-question-circle"></i> Esqueceu a senha?
+                            </a>
+                        </p>
                     </div>
                 </div>
                 
@@ -472,13 +351,95 @@
                         <input type="password" id="register-password" placeholder="Mínimo 6 caracteres">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="register()" style="width: 100%; margin-top: 1rem;">
+                    <div class="security-warning">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Importante:</strong> Sua conta será protegida contra tentativas de acesso.
+                    </div>
+                    
+                    <button class="btn btn-primary" id="register-submit-btn" onclick="register()">
                         <i class="fas fa-user-plus"></i> Criar Conta
                     </button>
                     
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Já tem conta? <a href="#" onclick="showLoginForm()">Entre aqui</a></p>
+                    <div class="social-login">
+                        <p>Ou cadastre-se com:</p>
+                        <div>
+                            <button onclick="handleGoogleLogin()">
+                                <i class="fab fa-google"></i> Google
+                            </button>
+                            <button onclick="handleFacebookLogin()">
+                                <i class="fab fa-facebook-f"></i> Facebook
+                            </button>
+                        </div>
                     </div>
+                    
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <p>Já tem conta? <a href="#" id="show-login-link">Entre aqui</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Termos de Uso -->
+    <div class="modal-overlay" id="termos-modal" style="display: none;">
+        <div class="auth-modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="hideTermosModal()">&times;</button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155);">
+                <h2><i class="fas fa-scale-balanced"></i> Termos de Uso e Política de Privacidade</h2>
+                <p>Leia atentamente antes de usar a plataforma</p>
+            </div>
+            <div class="tab-content" style="padding: 1.5rem;">
+                <div class="termos-content">
+                    <p>Bem-vindo ao ReputAí. Ao utilizar nossa plataforma, você concorda com os seguintes termos:</p>
+                    
+                    <h4>1. Objetivo da Plataforma</h4>
+                    <p>O ReputAí tem como objetivo fornecer um espaço para que profissionais compartilhem suas experiências de trabalho em empresas brasileiras...</p>
+                    
+                    <h4>2. Responsabilidade do Usuário</h4>
+                    <p>Você é responsável pelas avaliações que publicar. Garanta que suas avaliações sejam baseadas em experiências reais e não contenham:</p>
+                    <ul>
+                        <li>Calúnia, difamação ou injúria;</li>
+                        <li>Informações falsas ou enganosas;</li>
+                        <li>Conteúdo ofensivo, discriminatório ou que incite o ódio;</li>
+                        <li>Dados pessoais de terceiros sem consentimento;</li>
+                        <li>Qualquer violação de direitos intelectuais.</li>
+                    </ul>
+                    <p><strong>Em caso de medidas judiciais, o usuário será o único responsável pelo conteúdo de sua avaliação.</strong></p>
+                    
+                    <h4>3. Moderação e Denúncias</h4>
+                    <p>Reservamos o direito de remover avaliações que violem nossos termos. As avaliações denunciadas serão ocultadas automaticamente até análise.</p>
+                    
+                    <h4>4. Privacidade e Anonimato</h4>
+                    <p>Respeitamos sua privacidade. Oferecemos a opção de avaliação anônima, onde seu nome não será exibido publicamente.</p>
+                    
+                    <h4>5. Direito de Resposta</h4>
+                    <p>Empresas têm o direito de responder a avaliações em um prazo razoável.</p>
+                    
+                    <h4>6. Conformidade Legal</h4>
+                    <p>Nos comprometemos a cumprir todas as leis brasileiras, incluindo a LGPD e o Marco Civil da Internet.</p>
+                    
+                    <div class="termos-check">
+                        <div>
+                            <input type="checkbox" id="concordar-termos">
+                            <div>
+                                <label for="concordar-termos">
+                                    <strong>Eu li e concordo com os Termos de Uso e Política de Privacidade do ReputAí.</strong>
+                                </label>
+                                <p>
+                                    Ao marcar esta opção, você confirma que é maior de 18 anos e aceita todas as condições acima.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+                    <button class="btn btn-secondary" onclick="hideTermosModal()" style="flex: 1;">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary" id="aceitar-termos-btn" style="flex: 1;" disabled>
+                        <i class="fas fa-check"></i> Aceitar e Continuar
+                    </button>
                 </div>
             </div>
         </div>
@@ -489,65 +450,42 @@
 
     <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Nossos Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
     <script src="auth.js"></script>
     
-    <!-- Inicialização CORRIGIDA -->
     <script>
-        // Inicialização corrigida
+        // Configuração específica da página home
         document.addEventListener('DOMContentLoaded', function() {
-            // Primeiro, garantir que Firebase está carregado
-            function checkFirebaseAndInit() {
-                if (window.firebaseDb) {
-                    console.log("✅ Firebase carregado, iniciando app...");
-                    initApp();
-                } else {
-                    console.log("⏳ Aguardando Firebase...");
-                    setTimeout(checkFirebaseAndInit, 100);
-                }
-            }
+            // Inicializar sessão
+            if (typeof initSessionCheck === 'function') initSessionCheck();
             
-            setTimeout(() => {
-                document.getElementById('global-loading').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('global-loading').style.display = 'none';
-                    checkFirebaseAndInit();
-                }, 500);
-            }, 1000);
+            // Configurar filtros
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const sector = this.getAttribute('data-sector');
+                    if (typeof filterBySector === 'function') filterBySector(sector);
+                });
+            });
             
-            // Configurar checkbox do modal de aviso APENAS SE EXISTIR
-            const concordarCheckbox = document.getElementById('concordar-avisos');
-            if (concordarCheckbox) {
-                concordarCheckbox.addEventListener('change', function() {
-                    const prosseguirBtn = document.getElementById('prosseguir-avaliacao');
-                    if (prosseguirBtn) {
-                        prosseguirBtn.disabled = !this.checked;
+            // Configurar busca
+            const searchInput = document.getElementById('search-company');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && typeof searchCompanies === 'function') {
+                        searchCompanies();
                     }
                 });
             }
             
-            function initApp() {
-                // Verificar funções antes de chamar
-                if (typeof initTypingEffect === 'function') initTypingEffect();
-                if (typeof initMap === 'function') initMap();
-                if (typeof loadHomeCompanies === 'function') loadHomeCompanies();
-                if (typeof initComoFuncionaSection === 'function') initComoFuncionaSection();
-                
-                // Verificar se há permissão de localização salva
-                const savedPermission = localStorage.getItem('reputai_location_permission');
-                if (savedPermission === 'granted') {
-                    if (typeof requestLocationPermission === 'function') {
-                        requestLocationPermission();
-                    }
-                }
-            }
-            
-            // Definir função para evitar erro no script.js
-            window.showAdminPanel = function() {
-                console.log("Função showAdminPanel chamada (stub)");
-            };
+            // Inicializar app
+            setTimeout(() => {
+                if (typeof initApp === 'function') initApp();
+                if (typeof initSmartNavigation === 'function') initSmartNavigation();
+            }, 500);
         });
     </script>
 </body>
