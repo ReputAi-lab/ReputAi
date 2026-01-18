@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Avalie sua experiência de trabalho em empresas brasileiras">
     
-    <!-- Preconnects otimizados -->
+    <!-- Preconnects -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -16,202 +16,15 @@
     
     <!-- Nosso CSS -->
     <link rel="stylesheet" href="style.css">
-    
-    <style>
-        .page-header {
-            padding: 120px 0 60px;
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            text-align: center;
-        }
-        
-        .page-header h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .evaluation-section {
-            padding: 3rem 0 5rem;
-        }
-        
-        .back-home {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: var(--primary);
-            color: white;
-            text-decoration: none;
-            border-radius: var(--radius);
-            margin-top: 2rem;
-            transition: var(--transition);
-        }
-        
-        .back-home:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-        
-        /* Novos estilos para os campos opcionais */
-        .optional-section {
-            background: var(--light);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            margin: 1.5rem 0;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .optional-section h4 {
-            color: var(--dark);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .optional-section h4 i {
-            color: var(--primary);
-        }
-        
-        .ambient-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 1rem;
-        }
-        
-        .ambient-option {
-            padding: 12px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-        
-        .ambient-option:hover {
-            border-color: var(--primary);
-        }
-        
-        .ambient-option.selected {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: white;
-        }
-        
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 1rem;
-        }
-        
-        .benefit-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: white;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .benefit-checkbox:hover {
-            border-color: var(--primary);
-        }
-        
-        .benefit-checkbox.selected {
-            border-color: var(--success);
-            background: #f0fdf4;
-        }
-        
-        .custom-benefit-input {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .custom-benefit-input input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-        }
-        
-        .custom-benefit-input button {
-            padding: 10px 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            cursor: pointer;
-        }
-        
-        .salary-range {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .salary-range input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-        }
-        
-        .salary-range select {
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-        }
-        
-        .custom-benefits-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        .custom-benefit-tag {
-            background: var(--primary);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .custom-benefit-tag button {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        
-        @media (max-width: 768px) {
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .ambient-options {
-                grid-template-columns: 1fr;
-            }
-            
-            .benefits-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
+    <!-- Loading -->
+    <div id="global-loading">
+        <div class="loading-spinner"></div>
+        <h2>ReputAí</h2>
+        <p>Carregando...</p>
+    </div>
+
     <!-- Header -->
     <header>
         <div class="container">
@@ -233,12 +46,10 @@
                         <li><a href="index.html#como-funciona"><i class="fas fa-question-circle"></i> Como Funciona</a></li>
                         <li id="auth-nav-item">
                             <div class="user-menu-container">
-                                <div class="user-avatar" onclick="toggleUserMenu()" id="user-avatar" style="display: none;">
-                                    <i class="fas fa-user"></i>
-                                </div>
+                                <div class="user-avatar" id="user-avatar" style="display: none;"></div>
                                 <div class="user-menu" id="user-menu" style="display: none;"></div>
                             </div>
-                            <a href="#" class="nav-btn" onclick="showAuthModal(event)" id="login-btn">
+                            <a href="#" class="nav-btn" id="login-btn">
                                 <i class="fas fa-user"></i> Entrar
                             </a>
                         </li>
@@ -259,20 +70,25 @@
     <!-- Evaluation Section -->
     <section class="evaluation-section">
         <div class="container">
-            <div class="evaluation-card" style="background: var(--white); padding: 2rem; border-radius: var(--radius); box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+            <div class="evaluation-card">
                 <h3 style="margin-bottom: 1.5rem;">Conte sua experiência de trabalho</h3>
                 
                 <div class="form-group">
                     <label>Nome da Empresa *</label>
                     <input type="text" id="evaluate-company" placeholder="Digite o nome da empresa que você trabalhou">
-                    <small style="color: var(--gray); display: block; margin-top: 5px;">
-                        Não encontra a empresa? Ela será cadastrada automaticamente para todos os usuários
-                    </small>
+                    <div class="auto-register-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Empresa não encontrada?</strong> 
+                            <p>Digite o nome completo e ela será cadastrada automaticamente para todos os usuários!</p>
+                            <small>Ex: "Nome da Empresa Ltda", "Restaurante Tal", "Loja X"</small>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label>Setor da Empresa</label>
-                    <select id="evaluate-sector" style="width: 100%; padding: 12px; border: 2px solid var(--gray-light); border-radius: var(--radius);">
+                    <select id="evaluate-sector">
                         <option value="">Selecione o setor (opcional)</option>
                         <option value="Tecnologia">Tecnologia</option>
                         <option value="Finanças">Finanças</option>
@@ -291,6 +107,19 @@
                 <div class="form-group">
                     <label>Localização da Empresa</label>
                     <input type="text" id="evaluate-location" placeholder="Cidade, Estado (opcional)">
+                </div>
+                
+                <!-- Opção de Avaliação Anônima -->
+                <div class="anonimo-option">
+                    <div>
+                        <input type="checkbox" id="avaliacao-anonima">
+                        <label for="avaliacao-anonima">
+                            Tornar minha avaliação anônima (seu nome não será exibido publicamente)
+                        </label>
+                        <small>
+                            Sua identidade será mantida em sigilo para outros usuários, mas permanecerá em nossos registros.
+                        </small>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -313,16 +142,16 @@
                 <div class="optional-section">
                     <h4><i class="fas fa-users"></i> Ambiente de Trabalho (Opcional)</h4>
                     <div class="ambient-options">
-                        <div class="ambient-option" data-value="ótimo" onclick="selectAmbientOption(this)">
+                        <div class="ambient-option" data-value="ótimo">
                             <i class="fas fa-laugh-beam"></i> Ótimo
                         </div>
-                        <div class="ambient-option" data-value="bom" onclick="selectAmbientOption(this)">
+                        <div class="ambient-option" data-value="bom">
                             <i class="fas fa-smile"></i> Bom
                         </div>
-                        <div class="ambient-option" data-value="normal" onclick="selectAmbientOption(this)">
+                        <div class="ambient-option" data-value="normal">
                             <i class="fas fa-meh"></i> Normal
                         </div>
-                        <div class="ambient-option" data-value="ruim" onclick="selectAmbientOption(this)">
+                        <div class="ambient-option" data-value="ruim">
                             <i class="fas fa-frown"></i> Ruim
                         </div>
                     </div>
@@ -334,34 +163,34 @@
                     <p style="color: var(--gray); margin-bottom: 10px;">Selecione os benefícios que a empresa oferece:</p>
                     
                     <div class="benefits-grid">
-                        <div class="benefit-checkbox" data-value="Plano de Saúde" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Plano de Saúde">
                             <i class="fas fa-heartbeat"></i> Plano de Saúde
                         </div>
-                        <div class="benefit-checkbox" data-value="Vale Alimentação" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Vale Alimentação">
                             <i class="fas fa-utensils"></i> Vale Alimentação
                         </div>
-                        <div class="benefit-checkbox" data-value="Vale Refeição" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Vale Refeição">
                             <i class="fas fa-coffee"></i> Vale Refeição
                         </div>
-                        <div class="benefit-checkbox" data-value="Vale Transporte" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Vale Transporte">
                             <i class="fas fa-bus"></i> Vale Transporte
                         </div>
-                        <div class="benefit-checkbox" data-value="Seguro de Vida" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Seguro de Vida">
                             <i class="fas fa-shield-alt"></i> Seguro de Vida
                         </div>
-                        <div class="benefit-checkbox" data-value="Home Office" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Home Office">
                             <i class="fas fa-home"></i> Home Office
                         </div>
-                        <div class="benefit-checkbox" data-value="Flexibilidade Horários" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Flexibilidade Horários">
                             <i class="fas fa-clock"></i> Flexibilidade de Horários
                         </div>
-                        <div class="benefit-checkbox" data-value="PLR/PPR" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="PLR/PPR">
                             <i class="fas fa-money-bill-wave"></i> PLR/PPR
                         </div>
-                        <div class="benefit-checkbox" data-value="Gympass/Academia" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Gympass/Academia">
                             <i class="fas fa-dumbbell"></i> Gympass/Academia
                         </div>
-                        <div class="benefit-checkbox" data-value="Day Off Aniversário" onclick="toggleBenefit(this)">
+                        <div class="benefit-checkbox" data-value="Day Off Aniversário">
                             <i class="fas fa-birthday-cake"></i> Day Off Aniversário
                         </div>
                     </div>
@@ -371,11 +200,9 @@
                         <p style="color: var(--gray); margin-bottom: 5px;">Adicionar benefício personalizado:</p>
                         <div class="custom-benefit-input">
                             <input type="text" id="custom-benefit" placeholder="Ex: Bolsa de estudos, Auxílio creche...">
-                            <button onclick="addCustomBenefit()"><i class="fas fa-plus"></i> Adicionar</button>
+                            <button id="add-custom-benefit-btn"><i class="fas fa-plus"></i> Adicionar</button>
                         </div>
-                        <div class="custom-benefits-list" id="custom-benefits-list">
-                            <!-- Benefícios personalizados aparecerão aqui -->
-                        </div>
+                        <div class="custom-benefits-list" id="custom-benefits-list"></div>
                     </div>
                 </div>
                 
@@ -396,7 +223,7 @@
                     <textarea id="evaluation-text" placeholder="Conte sua experiência de trabalho de forma detalhada..." rows="5"></textarea>
                 </div>
                 
-                <button class="btn btn-primary" onclick="verificarAvaliacao()" style="width: 100%; padding: 15px;">
+                <button class="btn btn-primary" id="submit-evaluation-btn" style="width: 100%; padding: 15px;">
                     <i class="fas fa-paper-plane"></i> Enviar Avaliação
                 </button>
                 
@@ -449,6 +276,7 @@
     <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal">
         <div class="auth-modal">
+            <button class="modal-close">&times;</button>
             <div class="modal-header">
                 <h2>Bem-vindo ao ReputAí</h2>
                 <p>Entre para avaliar empresas</p>
@@ -457,8 +285,8 @@
             <div class="tab-content">
                 <div id="login-tab" class="tab-pane active">
                     <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="login-email" placeholder="seu@email.com">
+                        <label>Email ou Nome de Usuário</label>
+                        <input type="text" id="login-email" placeholder="seu@email.com ou nome de usuário">
                     </div>
                     
                     <div class="form-group">
@@ -466,12 +294,29 @@
                         <input type="password" id="login-password" placeholder="Sua senha">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="login()" style="width: 100%; margin-top: 1rem;">
+                    <button class="btn btn-primary" id="login-submit-btn" onclick="login()">
                         <i class="fas fa-sign-in-alt"></i> Entrar
                     </button>
                     
+                    <div class="social-login">
+                        <p>Ou entre com:</p>
+                        <div>
+                            <button onclick="handleGoogleLogin()">
+                                <i class="fab fa-google"></i> Google
+                            </button>
+                            <button onclick="handleFacebookLogin()">
+                                <i class="fab fa-facebook-f"></i> Facebook
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Ainda não tem conta? <a href="#" onclick="showRegisterForm()">Cadastre-se</a></p>
+                        <p>Ainda não tem conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
+                        <p style="margin-top: 0.5rem;">
+                            <a href="#" id="forgot-password-link">
+                                <i class="fas fa-question-circle"></i> Esqueceu a senha?
+                            </a>
+                        </p>
                     </div>
                 </div>
                 
@@ -491,81 +336,71 @@
                         <input type="password" id="register-password" placeholder="Mínimo 6 caracteres">
                     </div>
                     
-                    <button class="btn btn-primary" onclick="register()" style="width: 100%; margin-top: 1rem;">
+                    <div class="security-warning">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Importante:</strong> Sua conta será protegida contra tentativas de acesso.
+                    </div>
+                    
+                    <button class="btn btn-primary" id="register-submit-btn" onclick="register()">
                         <i class="fas fa-user-plus"></i> Criar Conta
                     </button>
                     
+                    <div class="social-login">
+                        <p>Ou cadastre-se com:</p>
+                        <div>
+                            <button onclick="handleGoogleLogin()">
+                                <i class="fab fa-google"></i> Google
+                            </button>
+                            <button onclick="handleFacebookLogin()">
+                                <i class="fab fa-facebook-f"></i> Facebook
+                            </button>
+                        </div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Já tem conta? <a href="#" onclick="showLoginForm()">Entre aqui</a></p>
+                        <p>Já tem conta? <a href="#" id="show-login-link">Entre aqui</a></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Aviso -->
-    <div class="modal-overlay" id="aviso-modal" style="display: none;">
-        <div class="auth-modal" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <h2><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: Política de Avaliações</h2>
-                <p>Leia atentamente antes de prosseguir</p>
+    <!-- Modal de Termos de Uso -->
+    <div class="modal-overlay" id="termos-modal" style="display: none;">
+        <div class="auth-modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="hideTermosModal()">&times;</button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155);">
+                <h2><i class="fas fa-scale-balanced"></i> Termos de Uso e Política de Privacidade</h2>
+                <p>Leia atentamente antes de usar a plataforma</p>
             </div>
-            
             <div class="tab-content" style="padding: 1.5rem;">
-                <div class="aviso-content">
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                        <i class="fas fa-check-circle" style="color: #3b82f6; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Avaliações devem ser baseadas em experiência real</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Sua avaliação deve refletir sua experiência pessoal na empresa
-                            </p>
-                        </div>
-                    </div>
+                <div class="termos-content">
+                    <p>Bem-vindo ao ReputAí. Ao utilizar nossa plataforma, você concorda com os seguintes termos:</p>
                     
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <i class="fas fa-times-circle" style="color: #dc2626; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Não são permitidas avaliações copiadas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Avaliações de outros sites ou fontes externas serão removidas
-                            </p>
-                        </div>
-                    </div>
+                    <h4>1. Objetivo da Plataforma</h4>
+                    <p>O ReputAí tem como objetivo fornecer um espaço para que profissionais compartilhem suas experiências de trabalho em empresas brasileiras...</p>
                     
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <i class="fas fa-shield-alt" style="color: #10b981; margin-top: 2px;"></i>
+                    <div class="termos-check">
                         <div>
-                            <strong>Apenas avaliações feitas em nosso site são válidas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Este sistema aceita apenas avaliações feitas diretamente aqui
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="termos-uso" style="margin-top: 1.5rem; padding: 15px; background: #f8fafc; border-radius: var(--radius);">
-                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                            <input type="checkbox" id="concordar-avisos" style="margin-top: 5px;">
+                            <input type="checkbox" id="concordar-termos">
                             <div>
-                                <label for="concordar-avisos" style="font-weight: 500; cursor: pointer;">
-                                    Concordo com os termos acima e confirmo que:
+                                <label for="concordar-termos">
+                                    <strong>Eu li e concordo com os Termos de Uso e Política de Privacidade do ReputAí.</strong>
                                 </label>
-                                <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; color: var(--gray);">
-                                    <li>Esta avaliação é baseada em minha experiência pessoal</li>
-                                    <li>Não estou copiando conteúdo de outros sites</li>
-                                    <li>Estou sendo honesto e objetivo em minha avaliação</li>
-                                </ul>
+                                <p>
+                                    Ao marcar esta opção, você confirma que é maior de 18 anos e aceita todas as condições acima.
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button class="btn btn-secondary" onclick="hideAvisoModal()" style="flex: 1;">
+                    <button class="btn btn-secondary" onclick="hideTermosModal()" style="flex: 1;">
                         Cancelar
                     </button>
-                    <button class="btn btn-primary" id="prosseguir-avaliacao" onclick="prosseguirAvaliacao()" style="flex: 1;" disabled>
-                        <i class="fas fa-check"></i> Concordo e Prosseguir
+                    <button class="btn btn-primary" id="aceitar-termos-btn" style="flex: 1;" disabled>
+                        <i class="fas fa-check"></i> Aceitar e Continuar
                     </button>
                 </div>
             </div>
@@ -576,461 +411,68 @@
     <div class="toast" id="toast"></div>
 
     <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="script.js"></script>
     <script src="auth.js"></script>
-
+    
     <script>
-        // Variáveis globais
-        let evaluationData = null;
-        let selectedAmbient = null;
-        let selectedBenefits = [];
-        let customBenefits = [];
-        
-        // Inicialização
+        // Configuração específica da página de avaliação
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof checkUserLogin === 'function') {
-                checkUserLogin();
-            }
+            // 1. Inicializar sessão
+            if (typeof initSessionCheck === 'function') initSessionCheck();
             
-            // Focar no campo da empresa
-            setTimeout(() => {
-                document.getElementById('evaluate-company').focus();
-            }, 100);
-            
-            // Configurar checkbox do modal de aviso
-            const concordarCheckbox = document.getElementById('concordar-avisos');
-            if (concordarCheckbox) {
-                concordarCheckbox.addEventListener('change', function() {
-                    const btn = document.getElementById('prosseguir-avaliacao');
-                    if (btn) btn.disabled = !this.checked;
+            // 2. Configurar botão de envio
+            const submitBtn = document.getElementById('submit-evaluation-btn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function() {
+                    if (typeof verificarAvaliacao === 'function') verificarAvaliacao();
                 });
             }
             
-            // Carregar dados salvos se existirem
-            loadDraft();
+            // 3. Configurar campos opcionais
+            const ambientOptions = document.querySelectorAll('.ambient-option');
+            ambientOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    if (typeof selectAmbientOption === 'function') selectAmbientOption(this);
+                });
+            });
+            
+            const benefitCheckboxes = document.querySelectorAll('.benefit-checkbox');
+            benefitCheckboxes.forEach(benefit => {
+                benefit.addEventListener('click', function() {
+                    if (typeof toggleBenefit === 'function') toggleBenefit(this);
+                });
+            });
+            
+            const addBenefitBtn = document.getElementById('add-custom-benefit-btn');
+            if (addBenefitBtn) {
+                addBenefitBtn.addEventListener('click', function() {
+                    if (typeof addCustomBenefit === 'function') addCustomBenefit();
+                });
+            }
+            
+            const customBenefitInput = document.getElementById('custom-benefit');
+            if (customBenefitInput) {
+                customBenefitInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && typeof addCustomBenefit === 'function') {
+                        addCustomBenefit();
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            // 4. Inicializar autocomplete e campos
+            setTimeout(() => {
+                if (typeof setupCompanyAutocomplete === 'function') setupCompanyAutocomplete();
+                if (typeof loadEvaluationDraft === 'function') loadEvaluationDraft();
+                
+                // 5. Inicializar página de avaliação
+                if (typeof initEvaluationPage === 'function') initEvaluationPage();
+            }, 1000);
         });
-        
-        // Funções para os novos campos
-        
-        function selectAmbientOption(element) {
-            // Remover seleção anterior
-            document.querySelectorAll('.ambient-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            // Adicionar seleção atual
-            element.classList.add('selected');
-            selectedAmbient = element.getAttribute('data-value');
-            
-            // Salvar rascunho
-            saveDraft();
-        }
-        
-        function toggleBenefit(element) {
-            const benefit = element.getAttribute('data-value');
-            const index = selectedBenefits.indexOf(benefit);
-            
-            if (index === -1) {
-                // Adicionar benefício
-                element.classList.add('selected');
-                selectedBenefits.push(benefit);
-            } else {
-                // Remover benefício
-                element.classList.remove('selected');
-                selectedBenefits.splice(index, 1);
-            }
-            
-            // Salvar rascunho
-            saveDraft();
-        }
-        
-        function addCustomBenefit() {
-            const input = document.getElementById('custom-benefit');
-            const benefit = input.value.trim();
-            
-            if (benefit && !customBenefits.includes(benefit)) {
-                customBenefits.push(benefit);
-                updateCustomBenefitsList();
-                input.value = '';
-                
-                // Salvar rascunho
-                saveDraft();
-            }
-        }
-        
-        function removeCustomBenefit(benefit) {
-            const index = customBenefits.indexOf(benefit);
-            if (index !== -1) {
-                customBenefits.splice(index, 1);
-                updateCustomBenefitsList();
-                
-                // Salvar rascunho
-                saveDraft();
-            }
-        }
-        
-        function updateCustomBenefitsList() {
-            const list = document.getElementById('custom-benefits-list');
-            list.innerHTML = customBenefits.map(benefit => `
-                <div class="custom-benefit-tag">
-                    ${benefit}
-                    <button onclick="removeCustomBenefit('${benefit}')">&times;</button>
-                </div>
-            `).join('');
-        }
-        
-        // Função para verificar avaliação
-        function verificarAvaliacao() {
-            const companyName = document.getElementById('evaluate-company').value.trim();
-            const rating = document.querySelector('input[name="rating"]:checked');
-            const text = document.getElementById('evaluation-text').value.trim();
-            const sector = document.getElementById('evaluate-sector').value;
-            const location = document.getElementById('evaluate-location').value.trim();
-            const salaryAmount = document.getElementById('salary-amount').value.trim();
-            const salaryPeriod = document.getElementById('salary-period').value;
-            
-            if (!companyName || !rating || !text) {
-                showToast('Preencha todos os campos obrigatórios', 'error');
-                return;
-            }
-            
-            if (text.length < 50) {
-                showToast('A avaliação deve ter pelo menos 50 caracteres', 'error');
-                return;
-            }
-            
-            // Preparar dados da avaliação
-            evaluationData = {
-                companyName,
-                rating: parseInt(rating.value),
-                text,
-                sector: sector || "Outros",
-                location: location || "Brasil",
-                ambient: selectedAmbient || null,
-                benefits: [...selectedBenefits, ...customBenefits],
-                salary: salaryAmount ? {
-                    amount: salaryAmount,
-                    period: salaryPeriod
-                } : null
-            };
-            
-            showAvisoModal();
-        }
-        
-        // Função para mostrar modal de aviso
-        function showAvisoModal() {
-            const modal = document.getElementById('aviso-modal');
-            if (modal) {
-                modal.style.display = 'flex';
-                setTimeout(() => modal.classList.add('active'), 10);
-                
-                document.getElementById('concordar-avisos').checked = false;
-                document.getElementById('prosseguir-avaliacao').disabled = true;
-                
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) hideAvisoModal();
-                });
-                
-                document.addEventListener('keydown', function escHandler(e) {
-                    if (e.key === 'Escape') {
-                        hideAvisoModal();
-                        document.removeEventListener('keydown', escHandler);
-                    }
-                });
-            }
-        }
-        
-        // Função para esconder modal de aviso
-        function hideAvisoModal() {
-            const modal = document.getElementById('aviso-modal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => modal.style.display = 'none', 300);
-            }
-        }
-        
-        // Função para prosseguir com a avaliação
-        function prosseguirAvaliacao() {
-            if (!evaluationData) {
-                showToast('Erro: Dados da avaliação não encontrados', 'error');
-                return;
-            }
-            
-            hideAvisoModal();
-            submitEvaluation(evaluationData);
-        }
-        
-        // Função para enviar avaliação
-        function submitEvaluation(evalData) {
-            const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-            const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-            const currentUser = JSON.parse(localStorage.getItem('reputai_user') || 'null');
-            
-            if (!currentUser) {
-                showToast('Faça login para avaliar', 'error');
-                showAuthModal();
-                return;
-            }
-            
-            // Verificar se empresa já existe
-            const existingCompany = companies.find(c => 
-                c.name.toLowerCase() === evalData.companyName.toLowerCase()
-            );
-            
-            let companyId;
-            if (existingCompany) {
-                companyId = existingCompany.id;
-                showToast(`Empresa "${evalData.companyName}" atualizada com nova avaliação!`, 'success');
-            } else {
-                // Criar nova empresa
-                companyId = companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1;
-                const newCompany = {
-                    id: companyId,
-                    name: evalData.companyName,
-                    sector: evalData.sector,
-                    location: evalData.location,
-                    lat: -15 + (Math.random() - 0.5) * 20,
-                    lng: -50 + (Math.random() - 0.5) * 20,
-                    description: `Empresa cadastrada através de avaliação - Setor: ${evalData.sector}`,
-                    averageRating: evalData.rating,
-                    reviewCount: 1,
-                    cadastradaPor: currentUser.id,
-                    dataCadastro: new Date().toISOString(),
-                    // Adicionar dados agregados dos benefícios
-                    ambientStats: evalData.ambient ? {
-                        [evalData.ambient]: 1
-                    } : {},
-                    benefitsList: evalData.benefits || []
-                };
-                companies.push(newCompany);
-                localStorage.setItem('reputai_companies', JSON.stringify(companies));
-                
-                showToast(`Empresa "${evalData.companyName}" cadastrada automaticamente e agora está visível para todos os usuários!`, 'success');
-            }
-            
-            // Criar nova avaliação
-            const newEvaluation = {
-                id: evaluations.length > 0 ? Math.max(...evaluations.map(e => e.id)) + 1 : 1,
-                companyId: companyId,
-                userId: currentUser.id,
-                userName: currentUser.name,
-                rating: evalData.rating,
-                text: evalData.text,
-                date: new Date().toISOString(),
-                avisoAceito: true,
-                termosAceitosEm: new Date().toISOString(),
-                // Incluir dados opcionais
-                ambient: evalData.ambient,
-                benefits: evalData.benefits,
-                salary: evalData.salary
-            };
-            
-            evaluations.push(newEvaluation);
-            localStorage.setItem('reputai_evaluations', JSON.stringify(evaluations));
-            
-            // Atualizar estatísticas da empresa
-            const companyIndex = companies.findIndex(c => c.id === companyId);
-            if (companyIndex !== -1) {
-                const companyEvals = evaluations.filter(e => e.companyId === companyId);
-                const totalRating = companyEvals.reduce((sum, eval) => sum + eval.rating, 0);
-                companies[companyIndex].averageRating = totalRating / companyEvals.length;
-                companies[companyIndex].reviewCount = companyEvals.length;
-                
-                // Atualizar estatísticas de ambiente
-                const ambientCounts = {};
-                companyEvals.forEach(eval => {
-                    if (eval.ambient) {
-                        ambientCounts[eval.ambient] = (ambientCounts[eval.ambient] || 0) + 1;
-                    }
-                });
-                companies[companyIndex].ambientStats = ambientCounts;
-                
-                // Atualizar lista de benefícios (união de todos os benefícios mencionados)
-                const allBenefits = new Set();
-                companyEvals.forEach(eval => {
-                    if (eval.benefits && Array.isArray(eval.benefits)) {
-                        eval.benefits.forEach(benefit => allBenefits.add(benefit));
-                    }
-                });
-                companies[companyIndex].benefitsList = Array.from(allBenefits);
-                
-                localStorage.setItem('reputai_companies', JSON.stringify(companies));
-            }
-            
-            showToast('Avaliação enviada com sucesso!', 'success');
-            
-            // Limpar formulário
-            clearForm();
-            
-            // Limpar rascunho
-            clearDraft();
-            
-            // Focar novamente no campo da empresa
-            setTimeout(() => {
-                document.getElementById('evaluate-company').focus();
-            }, 100);
-        }
-        
-        // Função para limpar formulário
-        function clearForm() {
-            document.getElementById('evaluate-company').value = '';
-            document.getElementById('evaluation-text').value = '';
-            document.getElementById('evaluate-sector').value = '';
-            document.getElementById('evaluate-location').value = '';
-            document.getElementById('salary-amount').value = '';
-            document.getElementById('salary-period').value = 'mensal';
-            document.getElementById('custom-benefit').value = '';
-            
-            // Limpar seleções
-            document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
-            document.querySelectorAll('.ambient-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            document.querySelectorAll('.benefit-checkbox').forEach(benefit => {
-                benefit.classList.remove('selected');
-            });
-            
-            // Limpar arrays
-            selectedAmbient = null;
-            selectedBenefits = [];
-            customBenefits = [];
-            updateCustomBenefitsList();
-            
-            evaluationData = null;
-        }
-        
-        // Sistema de rascunho
-        function saveDraft() {
-            const draft = {
-                companyName: document.getElementById('evaluate-company').value,
-                sector: document.getElementById('evaluate-sector').value,
-                location: document.getElementById('evaluate-location').value,
-                text: document.getElementById('evaluation-text').value,
-                salaryAmount: document.getElementById('salary-amount').value,
-                salaryPeriod: document.getElementById('salary-period').value,
-                selectedAmbient,
-                selectedBenefits,
-                customBenefits
-            };
-            
-            localStorage.setItem('reputai_evaluation_draft', JSON.stringify(draft));
-        }
-        
-        function loadDraft() {
-            const draft = JSON.parse(localStorage.getItem('reputai_evaluation_draft') || 'null');
-            
-            if (draft) {
-                document.getElementById('evaluate-company').value = draft.companyName || '';
-                document.getElementById('evaluate-sector').value = draft.sector || '';
-                document.getElementById('evaluate-location').value = draft.location || '';
-                document.getElementById('evaluation-text').value = draft.text || '';
-                document.getElementById('salary-amount').value = draft.salaryAmount || '';
-                document.getElementById('salary-period').value = draft.salaryPeriod || 'mensal';
-                
-                // Restaurar ambiente
-                if (draft.selectedAmbient) {
-                    selectedAmbient = draft.selectedAmbient;
-                    document.querySelectorAll('.ambient-option').forEach(option => {
-                        if (option.getAttribute('data-value') === draft.selectedAmbient) {
-                            option.classList.add('selected');
-                        }
-                    });
-                }
-                
-                // Restaurar benefícios
-                if (draft.selectedBenefits) {
-                    selectedBenefits = draft.selectedBenefits;
-                    document.querySelectorAll('.benefit-checkbox').forEach(benefit => {
-                        if (draft.selectedBenefits.includes(benefit.getAttribute('data-value'))) {
-                            benefit.classList.add('selected');
-                        }
-                    });
-                }
-                
-                // Restaurar benefícios personalizados
-                if (draft.customBenefits) {
-                    customBenefits = draft.customBenefits;
-                    updateCustomBenefitsList();
-                }
-                
-                showToast('Rascunho da avaliação carregado', 'info');
-            }
-        }
-        
-        function clearDraft() {
-            localStorage.removeItem('reputai_evaluation_draft');
-        }
-        
-        // Salvar rascunho quando o usuário digitar
-        document.getElementById('evaluate-company').addEventListener('input', saveDraft);
-        document.getElementById('evaluation-text').addEventListener('input', saveDraft);
-        document.getElementById('salary-amount').addEventListener('input', saveDraft);
-        
-        // Função para mostrar modal (disponível globalmente)
-        window.showModal = function(content) {
-            // Fechar modal existente
-            const existingModal = document.getElementById('custom-modal');
-            if (existingModal) existingModal.remove();
-            
-            const modal = document.createElement('div');
-            modal.id = 'custom-modal';
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    ${content}
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            setTimeout(() => modal.classList.add('active'), 10);
-            
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) closeModal();
-            });
-            
-            document.addEventListener('keydown', function escHandler(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                    document.removeEventListener('keydown', escHandler);
-                }
-            });
-        };
-        
-        // Função para fechar modal
-        window.closeModal = function() {
-            const modal = document.getElementById('custom-modal');
-            if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => modal.remove(), 300);
-            }
-        };
-        
-        // Função para mostrar toast
-        window.showToast = function(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            if (!toast) return;
-            
-            const icons = {
-                success: 'fas fa-check-circle',
-                error: 'fas fa-exclamation-circle',
-                info: 'fas fa-info-circle'
-            };
-            
-            const colors = {
-                success: '#10b981',
-                error: '#dc2626',
-                info: '#3b82f6'
-            };
-            
-            toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
-            toast.style.background = colors[type] || colors.info;
-            toast.className = 'toast show';
-            
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        };
     </script>
 </body>
 </html>
