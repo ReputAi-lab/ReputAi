@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel Admin - ReputAí</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Preconnects -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Nosso CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="global-loading">
+        <div class="loading-spinner"></div>
+        <h2>ReputAí</h2>
+        <p>Carregando...</p>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">R</div>
+                    <div class="logo-text">
+                        <h1>ReputAí</h1>
+                        <span>Painel Admin Supremo</span>
+                    </div>
+                </a>
+                
+                <nav>
+                    <ul>
+                        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+                        <li id="auth-nav-item">
+                            <div class="user-menu-container">
+                                <div class="user-avatar" id="user-avatar" style="display: none;" onclick="toggleUserMenu()"></div>
+                                <div class="user-menu" id="user-menu" style="display: none;">
+                                    <a href="#" onclick="showProfile()">Meu Perfil</a>
+                                    <a href="#" onclick="logout()">Sair</a>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>Painel do Administrador Supremo</h1>
+            <p>Controle total da plataforma ReputAí</p>
+        </div>
+    </section>
+
+    <!-- Admin Dashboard -->
+    <section class="companies-section">
+        <div class="container">
+            <div class="admin-stats-grid">
+                <div class="stat-card">
+                    <h3 id="total-users">0</h3>
+                    <p>Usuários Cadastrados</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="total-companies">0</h3>
+                    <p>Empresas Cadastradas</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="total-reviews">0</h3>
+                    <p>Avaliações Realizadas</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="admin-users">0</h3>
+                    <p>Administradores</p>
+                </div>
+            </div>
+
+            <div class="evaluation-list" id="evaluations-list">
+                <!-- Avaliações carregadas aqui -->
+            </div>
+
+            <div class="admin-controls">
+                <button onclick="showSuperAdminPanel()">Painel Supremo</button>
+                <button onclick="exportAllData()">Exportar Dados</button>
+                <button class="danger" onclick="clearAllData()">Limpar Todos os Dados</button>
+            </div>
+
+            <div id="audit-log"></div>
+        </div>
+    </section>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script>
+        if (!window.currentUser || !window.currentUser.isAdmin) {
+            window.location.href = 'index.html';
+            showToast('Acesso negado', 'error');
+        } else {
+            loadStats();
+            loadAuditLog();
+        }
+    </script>
+</body>
+</html>
