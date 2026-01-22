@@ -2,26 +2,24 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Avaliar Empresa - ReputAí</title>
+    <title>Painel Admin - ReputAí</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline';">
     
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
 </head>
 <body>
-    <!-- Form com CSRF hidden field -->
-    <form id="evaluation-form" onsubmit="submitEvaluation(event)">
-        <input type="hidden" id="csrf-token" value="">
-        <!-- Campos -->
-    </form>
+    <header>
+        <a href="index.html">Voltar ao Site</a>
+    </header>
 
-    <!-- Modal auth padronizado -->
-    <div class="modal-overlay" id="auth-modal" style="display: none;">
-        <!-- Mesmo -->
-    </div>
+    <section>
+        <h1>Painel do Administrador</h1>
+        <div id="admin-denuncias">
+            <!-- Denúncias carregadas aqui -->
+        </div>
+    </section>
 
     <script src="firebase-config.js"></script>
     <script src="auth.js"></script>

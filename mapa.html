@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa - ReputAí</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com https://maps.googleapis.com; style-src 'self' 'unsafe-inline';">
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
+</head>
+<body>
+    <!-- Conteúdo mapa, com modal auth padronizado -->
+    <div class="modal-overlay" id="auth-modal" style="display: none;">
+        <!-- Mesmo que outros -->
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={YOUR_GOOGLE_MAPS_KEY}&callback=initMap" async defer></script>
+</body>
+</html>

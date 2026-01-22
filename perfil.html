@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Perfil - ReputAí</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://www.gstatic.com; style-src 'self' 'unsafe-inline';">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <!-- DOMPurify for XSS sanitation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.3/purify.min.js"></script>
+    <!-- TensorFlow.js for content moderation -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/toxicity"></script>
+</head>
+<body>
+    <div id="global-loading">
+        <div class="loading-spinner"></div>
+        <h2>ReputAí</h2>
+        <p>Carregando perfil...</p>
+    </div>
+
+    <header id="main-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">R</div>
+                    <div class="logo-text">
+                        <h1>ReputAí</h1>
+                        <span>Avaliações reais de empresas</span>
+                    </div>
+                </a>
+                
+                <nav>
+                    <ul>
+                        <li><a href="index.html"><i class="fas fa-home"></i> <span class="nav-text">Home</span></a></li>
+                        <li><a href="mapa.html"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
+                        <li><a href="avaliacao.html"><i class="fas fa-star"></i> <span class="nav-text">Avaliar</span></a></li>
+                        <li id="auth-nav-item">
+                            <div class="user-menu-container">
+                                <div class="user-avatar" id="user-avatar" style="display: none;" onclick="toggleUserMenu()"></div>
+                                <div class="user-menu" id="user-menu" style="display: none;">
+                                    <a href="perfil.html" class="active"><i class="fas fa-user"></i> Meu Perfil</a>
+                                    <a href="admin.html" id="admin-link" style="display: none;"><i class="fas fa-crown"></i> Painel Admin</a>
+                                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
+                            </div>
+                            <a href="#" class="nav-btn" id="login-btn" onclick="showAuthModal(); return false;">
+                                <i class="fas fa-user"></i> <span class="nav-text">Entrar</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section class="page-header">
+        <div class="container">
+            <h1><i class="fas fa-user-circle"></i> Meu Perfil</h1>
+            <p>Gerencie suas informações e avaliações</p>
+        </div>
+    </section>
+
+    <section class="profile-section">
+        <div class="container">
+            <div id="profile-content">
+                <div class="profile-container">
+                    <div class="profile-sidebar">
+                        <div class="profile-card">
+                            <div class="profile-header">
+                                <div class="profile-avatar-large" id="profile-avatar">U</div>
+                                <div class="profile-info">
+                                    <h2 id="profile-name">Carregando...</h2>
+                                    <p id="profile-email">carregando@email.com</p>
+                                    <div id="profile-badges"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="profile-stats">
+                                <div class="profile-stat">
+                                    <div class="stat-number" id="total-reviews">0</div>
+                                    <div class="stat-label">Avaliações</div>
+                                </div>
+                                <div class="profile-stat">
+                                    <div class="stat-number" id="helpful-count">0</div>
+                                    <div class="stat-label">Úteis</div>
+                                </div>
+                                <div class="profile-stat">
+                                    <div class="stat-number" id="member-since">0</div>
+                                    <div class="stat-label">Dias</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="btn btn-secondary" onclick="editProfile()">
+                                <i class="fas fa-edit"></i> Editar Perfil
+                            </button>
+                            <button class="btn btn-secondary" onclick="showMyDrafts()">
+                                <i class="fas fa-save"></i> Meus Rascunhos
+                            </button>
+                            <button class="btn btn-secondary" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Sair
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-content">
+                        <div class="profile-tabs">
+                            <button class="tab-btn active" onclick="showProfileTab('my-reviews')">
+                                <i class="fas fa-star"></i> Minhas Avaliações
+                            </button>
+                            <button class="tab-btn" onclick="showProfileTab('saved-companies')">
+                                <i class="fas fa-bookmark"></i> Salvas
+                            </button>
+                            <button class="tab-btn" onclick="showProfileTab('activity')">
+                                <i class="fas fa-bell"></i> Atividade
+                            </button>
+                        </div>
+                        
+                        <div class="tab-content active" id="my-reviews-tab">
+                            <div id="my-reviews-list">
+                                <!-- Reviews serão carregados aqui -->
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="saved-companies-tab">
+                            <div class="no-saved">
+                                <i class="fas fa-bookmark"></i>
+                                <h3>Nenhuma empresa salva</h3>
+                                <p>Salve empresas para acessar rapidamente depois</p>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="activity-tab">
+                            <div class="no-activity">
+                                <i class="fas fa-bell"></i>
+                                <h3>Sem atividade recente</h3>
+                                <p>Suas interações aparecerão aqui</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal de Autenticação Padronizado -->
+    <div class="modal-overlay" id="auth-modal" style="display: none;">
+        <div class="auth-modal">
+            <button class="modal-close" onclick="hideAuthModal()">&times;</button>
+            
+            <div id="login-form">
+                <h3><i class="fas fa-sign-in-alt"></i> Entrar no ReputAí</h3>
+                
+                <input type="email" id="login-email" placeholder="Seu email" required>
+                <input type="password" id="login-password" placeholder="Sua senha" required>
+                
+                <input type="hidden" id="csrf-token-login" value="">
+                
+                <button class="btn-login" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                
+                <p>Não tem conta? <a href="#" onclick="showRegisterForm()">Cadastre-se</a></p>
+                
+                <div class="social-buttons">
+                    <button onclick="handleGoogleLogin()" class="google-btn">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button onclick="handleFacebookLogin()" class="facebook-btn">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </button>
+                </div>
+            </div>
+            
+            <div id="register-form" style="display: none;">
+                <h3><i class="fas fa-user-plus"></i> Criar Conta no ReputAí</h3>
+                
+                <input type="text" id="register-name" placeholder="Seu nome completo" required>
+                <input type="email" id="register-email" placeholder="Seu email" required>
+                <input type="password" id="register-password" placeholder="Senha (mín 6 chars)" required>
+                <input type="text" id="register-cpf" placeholder="CPF (opcional)" maxlength="11">
+                
+                <input type="hidden" id="csrf-token-register" value="">
+                
+                <button class="btn-register" onclick="register()">
+                    <i class="fas fa-user-plus"></i> Criar Conta
+                </button>
+                
+                <p>Já tem conta? <a href="#" onclick="showLoginForm()">Login</a></p>
+                
+                <div class="social-buttons">
+                    <button onclick="handleGoogleLogin()" class="google-btn">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button onclick="handleFacebookLogin()" class="facebook-btn">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
