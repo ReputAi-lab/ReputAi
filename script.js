@@ -1,82 +1,78 @@
 /*************************************************
- * REPUTAÍ - SCRIPT.JS (PRODUÇÃO)
- * Empresas, avaliações e estatísticas
+ * REPUTAÍ - SCRIPT.JS (PRODUÇÃO FINAL)
+ * Blindado contra erro de carregamento
  *************************************************/
 
-console.log("📦 [script] Inicializando sistema ReputAí...");
-
-/* ================= FIREBASE ================= */
-
-let db = null;
-
 (async () => {
+  console.log("📦 [script] Inicializando ReputAí...");
+
+  let db = null;
+
+  /* ================= FIREBASE ================= */
   try {
     const firebase = await import("./firebase-config.js");
     db = firebase.db;
     console.log("🔥 [script] Firestore conectado");
   } catch (e) {
-    console.warn("⚠️ [script] Firestore indisponível, usando fallback local");
+    console.warn("⚠️ [script] Firestore indisponível, usando localStorage");
   }
-})();
 
-/* ================= FIRESTORE IMPORTS ================= */
+  /* ================= FIRESTORE SDK ================= */
+  async function fs() {
+    return await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+  }
 
-async function firestore() {
-  return await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-}
+  /* ================= LOCAL STORAGE ================= */
+  function getLocal(key) {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  }
 
-/* ================= HELPERS LOCAL ================= */
+  function setLocal(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
 
-function getLocal(key) {
-  return JSON.parse(localStorage.getItem(key) || "[]");
-}
-
-function setLocal(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-/* ================= EMPRESAS ================= */
-
-async function loadCompanies() {
-  if (db) {
-    try {
-      const { collection, getDocs } = await firestore();
-      const snap = await getDocs(collection(db, "companies"));
-      const companies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setLocal("reputai_companies", companies);
-      return companies;
-    } catch (e) {
-      console.warn("⚠️ Erro Firestore empresas, fallback local");
+  /* ================= EMPRESAS ================= */
+  async function loadCompanies() {
+    if (db) {
+      try {
+        const { collection, getDocs } = await fs();
+        const snap = await getDocs(collection(db, "companies"));
+        const companies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setLocal("reputai_companies", companies);
+        return companies;
+      } catch (e) {
+        console.warn("⚠️ Firestore falhou, fallback local");
+      }
     }
+    return getLocal("reputai_companies");
   }
-  return getLocal("reputai_companies");
-}
 
-/* ================= AVALIAÇÕES ================= */
-
-async function saveReview(review) {
-  if (db) {
-    try {
-      const { collection, addDoc, serverTimestamp } = await firestore();
-      await addDoc(collection(db, "reviews"), {
-        ...review,
-        createdAt: serverTimestamp()
-      });
-      console.log("⭐ Avaliação salva no Firestore");
-      return;
-    } catch (e) {
-      console.warn("⚠️ Falha Firestore avaliação, salvando local");
+  /* ================= AVALIAÇÕES ================= */
+  async function saveReview(review) {
+    if (db) {
+      try {
+        const { collection, addDoc, serverTimestamp } = await fs();
+        await addDoc(collection(db, "reviews"), {
+          ...review,
+          createdAt: serverTimestamp()
+        });
+        console.log("⭐ Avaliação salva no Firestore");
+        return true;
+      } catch (e) {
+        console.warn("⚠️ Falha Firestore, salvando local");
+      }
     }
+
+    const reviews = getLocal("reputai_reviews");
+    reviews.push(review);
+    setLocal("reputai_reviews", reviews);
+    return true;
   }
-  const reviews = getLocal("reputai_reviews");
-  reviews.push(review);
-  setLocal("reputai_reviews", reviews);
-}
 
-/* ================= ESTATÍSTICAS ================= */
+  /* ================= ESTATÍSTICAS ================= */
+  async function updateCompanyStats(companyName, rating) {
+    if (!db) return;
 
-async function updateCompanyStats(companyName, rating) {
-  if (db) {
     try {
       const {
         collection,
@@ -86,7 +82,7 @@ async function updateCompanyStats(companyName, rating) {
         addDoc,
         updateDoc,
         doc
-      } = await firestore();
+      } = await fs();
 
       const q = query(collection(db, "companies"), where("name", "==", companyName));
       const snap = await getDocs(q);
@@ -113,27 +109,16 @@ async function updateCompanyStats(companyName, rating) {
       });
 
     } catch (e) {
-      console.warn("⚠️ Erro estatística Firestore");
+      console.warn("⚠️ Erro ao atualizar estatísticas");
     }
   }
-}
 
-/* ================= UI ================= */
+  /* ================= EXPORT GLOBAL ================= */
+  window.Reputai = {
+    loadCompanies,
+    saveReview,
+    updateCompanyStats
+  };
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3000);
-}
-
-/* ================= EXPORT GLOBAL ================= */
-
-window.Reputai = {
-  loadCompanies,
-  saveReview,
-  updateCompanyStats
-};
-
-console.log("✅ [script] Sistema ReputAí carregado");
+  console.log("✅ [script] ReputAí carregado com sucesso");
+})();
