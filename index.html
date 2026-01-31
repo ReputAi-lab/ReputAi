@@ -1,81 +1,421 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>ReputAí - Avaliações de Empresas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Fontes e ícones (mantidos) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- CSS original -->
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>ReputAí - Avaliações Reais de Empresas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Avaliações reais de empresas brasileiras. Encontre o melhor lugar para trabalhar baseado em experiências reais de funcionários.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<header>
-  <div class="container">
-    <div class="header-content">
-      <a href="index.html" class="logo">
-        <div class="logo-icon">R</div>
-        <div class="logo-text">
-          <h1>ReputAí</h1>
-          <span>Avaliações reais de empresas</span>
-        </div>
-      </a>
-      <nav>
-        <ul>
-          <li><a href="empresas.html">Empresas</a></li>
-          <li><a href="perfil.html">Perfil</a></li>
-          <li><a href="admin.html">Admin</a></li>
-        </ul>
-      </nav>
+    <div id="global-loading">
+        <div class="loading-spinner"></div>
+        <h2>ReputAí</h2>
+        <p>Carregando a melhor experiência para você...</p>
     </div>
-  </div>
-</header>
 
-<section class="hero">
-  <div class="container">
-    <h2>Descubra a reputação das empresas</h2>
-    <p>Veja avaliações reais de funcionários e candidatos</p>
-    <a href="empresas.html" class="btn btn-primary">Ver empresas</a>
-  </div>
-</section>
+    <header id="main-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">R</div>
+                    <div class="logo-text">
+                        <h1>ReputAí</h1>
+                        <span>Avaliações reais de empresas</span>
+                    </div>
+                </a>
+                
+                <nav>
+                    <ul>
+                        <li><a href="index.html" class="active"><i class="fas fa-home"></i> <span class="nav-text">Início</span></a></li>
+                        <li><a href="mapa.html"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
+                        <li><a href="avaliacao.html"><i class="fas fa-star"></i> <span class="nav-text">Avaliar</span></a></li>
+                        <li id="auth-nav-item">
+                            <div class="user-menu-container">
+                                <div class="user-avatar" id="user-avatar" style="display: none;" onclick="toggleUserMenu()"></div>
+                                <div class="user-menu" id="user-menu" style="display: none;">
+                                    <a href="perfil.html"><i class="fas fa-user"></i> Meu Perfil</a>
+                                    <a href="admin.html" id="admin-link" style="display: none;"><i class="fas fa-crown"></i> Painel Admin</a>
+                                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
+                            </div>
+                            <a href="#" class="nav-btn" id="login-btn" onclick="showAuthModal(); return false;">
+                                <i class="fas fa-user"></i> <span class="nav-text">Entrar</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
 
-<footer>
-  <div class="container">
-    <p>&copy; 2026 ReputAí - Todos os direitos reservados</p>
-  </div>
-</footer>
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h2>
+                        Encontre <span class="typing-container"><span class="typing-text"></span></span> para trabalhar
+                    </h2>
+                    <p>Avaliações reais de ex-funcionários para você tomar a decisão certa na sua carreira. Descubra a verdade sobre empresas brasileiras.</p>
+                    
+                    <div class="search-card">
+                        <input type="text" id="search-company" placeholder="Digite o nome da empresa, setor ou localização...">
+                        <button class="btn-search" onclick="searchCompanies()">
+                            <i class="fas fa-search"></i> Buscar Empresas
+                        </button>
+                    </div>
+                    
+                    <div class="filter-tags">
+                        <span class="filter-tag" onclick="filterBySector('Tecnologia')">
+                            <i class="fas fa-laptop-code"></i> Tecnologia
+                        </span>
+                        <span class="filter-tag" onclick="filterBySector('Finanças')">
+                            <i class="fas fa-chart-line"></i> Finanças
+                        </span>
+                        <span class="filter-tag" onclick="filterBySector('Saúde')">
+                            <i class="fas fa-heartbeat"></i> Saúde
+                        </span>
+                        <span class="filter-tag" onclick="filterBySector('Educação')">
+                            <i class="fas fa-graduation-cap"></i> Educação
+                        </span>
+                        <span class="filter-tag" onclick="filterBySector('Varejo')">
+                            <i class="fas fa-shopping-cart"></i> Varejo
+                        </span>
+                    </div>
+                    
+                    <div class="hero-buttons">
+                        <a href="mapa.html" class="btn btn-primary">
+                            <i class="fas fa-map"></i> Explorar Mapa Interativo
+                        </a>
+                        <a href="avaliacao.html" class="btn btn-secondary">
+                            <i class="fas fa-star"></i> Compartilhar Sua Experiência
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<!-- 🔑 AUTENTICAÇÃO (NÃO MUDA LAYOUT) -->
-<script src="auth.js"></script>
+    <section class="companies-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-building"></i> Empresas em Destaque</h2>
+                <p>Conheça empresas bem avaliadas por funcionários</p>
+            </div>
+            
+            <div id="companies-list" class="companies-grid"></div>
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="empresas.html" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Ver Todas as Empresas
+                </a>
+            </div>
+        </div>
+    </section>
 
-<!-- 📦 SISTEMA (EMPRESAS / AVALIAÇÕES) -->
-<script src="script.js"></script>
+    <section class="como-funciona-section" id="como-funciona">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-cogs"></i> Como Funciona</h2>
+                <p>Entenda em 3 passos simples como o ReputAí funciona</p>
+            </div>
+            
+            <div class="passos-container">
+                <div class="passo-card">
+                    <div class="passo-numero">1</div>
+                    <div class="passo-icon">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <h3>Crie sua Conta</h3>
+                    <p>Faça login ou cadastre-se gratuitamente para acessar todas as funcionalidades do sistema.</p>
+                    <ul class="passo-lista">
+                        <li><i class="fas fa-check-circle"></i> Cadastro rápido e seguro</li>
+                        <li><i class="fas fa-check-circle"></i> Dados protegidos</li>
+                        <li><i class="fas fa-check-circle"></i> Acesso imediato</li>
+                    </ul>
+                </div>
+                
+                <div class="passo-card">
+                    <div class="passo-numero">2</div>
+                    <div class="passo-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3>Avalie Empresas</h3>
+                    <p>Compartilhe sua experiência real de trabalho em empresas brasileiras.</p>
+                    <ul class="passo-lista">
+                        <li><i class="fas fa-check-circle"></i> Baseado em experiência real</li>
+                        <li><i class="fas fa-check-circle"></i> Sistema de 1-5 estrelas</li>
+                        <li><i class="fas fa-check-circle"></i> Comentários detalhados</li>
+                    </ul>
+                </div>
+                
+                <div class="passo-card">
+                    <div class="passo-numero">3</div>
+                    <div class="passo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Consulte Avaliações</h3>
+                    <p>Encontre as melhores empresas para trabalhar baseado em avaliações reais.</p>
+                    <ul class="passo-lista">
+                        <li><i class="fas fa-check-circle"></i> Mapa interativo</li>
+                        <li><i class="fas fa-check-circle"></i> Filtros por setor</li>
+                        <li><i class="fas fa-check-circle"></i> Busca inteligente</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="detalhes-funcionamento">
+                <h3>Política de Avaliações</h3>
+                <div class="detalhes-grid">
+                    <div class="detalhe-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <h4>Avaliações Verificadas</h4>
+                        <p>Todas as avaliações são feitas exclusivamente em nosso site por usuários registrados.</p>
+                    </div>
+                    <div class="detalhe-item">
+                        <i class="fas fa-user-secret"></i>
+                        <h4>Experiência Real</h4>
+                        <p>Exigimos que as avaliações sejam baseadas em experiência pessoal real de trabalho.</p>
+                    </div>
+                    <div class="detalhe-item">
+                        <i class="fas fa-ban"></i>
+                        <h4>Sem Cópias</h4>
+                        <p>Não permitimos avaliações copiadas de outros sites ou fontes externas.</p>
+                    </div>
+                    <div class="detalhe-item">
+                        <i class="fas fa-building"></i>
+                        <h4>Cadastro Automático</h4>
+                        <p>Se uma empresa não existir, ela é cadastrada automaticamente com sua avaliação.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="aviso-home">
+                <h3><i class="fas fa-star"></i> Quer avaliar uma empresa?</h3>
+                <p>Clique no botão "Avaliar" no menu ou no botão abaixo para acessar nossa página completa de avaliações.</p>
+                <a href="avaliacao.html" class="btn btn-primary btn-avaliar-home">
+                    <i class="fas fa-star"></i> Ir para Página de Avaliação
+                </a>
+            </div>
+        </div>
+    </section>
 
-<!-- 🧪 TESTE AUTOMÁTICO DE INTEGRAÇÃO -->
-<script>
-  console.log('🧪 TESTE INTEGRAÇÃO INDEX.HTML');
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 ReputAí. Todos os direitos reservados.</p>
+            <p style="margin-top: 1rem;">
+                <a href="#" onclick="showTermosModal(); return false;"><i class="fas fa-file-contract"></i> Termos de Uso</a> | 
+                <a href="#" onclick="showTermosModal(); return false;"><i class="fas fa-shield-alt"></i> Política de Privacidade</a> | 
+                <a href="#"><i class="fas fa-envelope"></i> Contato</a>
+            </p>
+        </div>
+    </footer>
 
-  if (window.authService) {
-    console.log('✅ authService carregado');
-    window.authService.observeAuth(user => {
-      console.log('👤 Usuário atual:', user);
-    });
-  } else {
-    console.error('❌ authService NÃO carregado');
-  }
+    <div class="modal-overlay" id="termos-modal" style="display: none;">
+        <div class="auth-modal termos-modal">
+            <button class="modal-close" onclick="hideTermosModal()">&times;</button>
+            <div class="modal-header">
+                <h2><i class="fas fa-scale-balanced"></i> Termos de Uso e Política de Privacidade</h2>
+                <p>Leia atentamente antes de usar a plataforma</p>
+            </div>
+            <div class="tab-content">
+                <div class="termos-content">
+                    <p>Bem-vindo ao ReputAí. Ao utilizar nossa plataforma, você concorda com os seguintes termos:</p>
+                    
+                    <h4>1. Objetivo da Plataforma</h4>
+                    <p>O ReputAí tem como objetivo fornecer um espaço para que profissionais compartilhem suas experiências de trabalho em empresas brasileiras, ajudando outros profissionais a tomarem decisões informadas sobre suas carreiras. Nosso compromisso é com a transparência e a legalidade, respeitando as leis vigentes no país, especialmente o Marco Civil da Internet e a LGPD.</p>
+                    
+                    <h4>2. Responsabilidade do Usuário</h4>
+                    <p>Você é responsável pelas avaliações que publicar. Garanta que suas avaliações sejam baseadas em experiências reais e não contenham:</p>
+                    <ul>
+                        <li>Calúnia, difamação ou injúria;</li>
+                        <li>Informações falsas ou enganosas;</li>
+                        <li>Conteúdo ofensivo, discriminatório ou que incite o ódio;</li>
+                        <li>Dados pessoais de terceiros sem consentimento;</li>
+                        <li>Qualquer violação de direitos intelectuais.</li>
+                    </ul>
+                    <p><strong>Em caso de medidas judiciais, o usuário será o único responsável pelo conteúdo de sua avaliação.</strong></p>
+                    
+                    <h4>3. Moderação e Denúncias</h4>
+                    <p>Reservamos o direito de remover avaliações que violem nossos termos. As avaliações denunciadas serão ocultadas automaticamente até análise. Oferecemos um canal para denúncias e para que empresas exercitem seu direito de resposta.</p>
+                    
+                    <h4>4. Privacidade e Anonimato</h4>
+                    <p>Respeitamos sua privacidade. Oferecemos a opção de avaliação anônima, onde seu nome não será exibido publicamente. No entanto, para fins de moderação e cumprimento da lei, mantemos registros internos (como e-mail e IP) por pelo menos 6 meses.</p>
+                    
+                    <h4>5. Direito de Resposta</h4>
+                    <p>Empresas têm o direito de responder a avaliações em um prazo razoável. As respostas serão publicadas abaixo da avaliação correspondente.</p>
+                    
+                    <h4>6. Conformidade Legal</h4>
+                    <p>Nos comprometemos a cumprir todas as leis brasileiras, incluindo a LGPD e o Marco Civil da Internet. Em caso de solicitação judicial, forneceremos os registros necessários.</p>
+                    
+                    <div class="termos-check">
+                        <div class="termos-check-container">
+                            <input type="checkbox" id="concordar-termos">
+                            <div>
+                                <label for="concordar-termos">
+                                    <strong>Eu li e concordo com os Termos de Uso e Política de Privacidade do ReputAí.</strong>
+                                </label>
+                                <p class="termos-idade">
+                                    Ao marcar esta opção, você confirma que é maior de 18 anos e aceita todas as condições acima.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" onclick="hideTermosModal()">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary" id="aceitar-termos-btn" disabled>
+                        <i class="fas fa-check"></i> Aceitar e Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  if (window.Reputai) {
-    console.log('✅ Reputai carregado');
-  } else {
-    console.error('❌ Reputai NÃO carregado');
-  }
-</script>
+    <div class="modal-overlay" id="auth-modal" style="display: none;">
+        <div class="auth-modal">
+            <button class="modal-close" onclick="hideAuthModal()">&times;</button>
+            
+            <div id="login-form">
+                <h3><i class="fas fa-sign-in-alt"></i> Entrar no ReputAí</h3>
+                
+                <input type="email" id="login-email" placeholder="Seu email" value="teste@exemplo.com">
+                <input type="password" id="login-password" placeholder="Sua senha" value="senha123">
+                
+                <button id="login-submit-btn" class="btn-login" onclick="login()">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                
+                <p style="margin-top: 1rem;">
+                    Não tem conta? 
+                    <a href="#" id="show-register-link" onclick="showRegisterForm(); return false;">
+                        Cadastre-se agora
+                    </a>
+                </p>
+                
+                <div class="social-buttons">
+                    <button onclick="handleGoogleLogin()" class="google-btn">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button onclick="handleFacebookLogin()" class="facebook-btn">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </button>
+                </div>
+            </div>
+            
+            <div id="register-form" style="display: none;">
+                <h3><i class="fas fa-user-plus"></i> Criar Conta no ReputAí</h3>
+                
+                <input type="text" id="register-name" placeholder="Seu nome completo">
+                <input type="email" id="register-email" placeholder="Seu melhor email">
+                <input type="password" id="register-password" placeholder="Crie uma senha (mínimo 6 caracteres)">
+                <input type="text" id="register-cpf" placeholder="CPF (opcional)" maxlength="11">
+                
+                <button id="register-submit-btn" class="btn-register" onclick="register()">
+                    <i class="fas fa-user-plus"></i> Criar Minha Conta
+                </button>
+                
+                <p style="margin-top: 1rem;">
+                    Já tem conta? 
+                    <a href="#" id="show-login-link" onclick="showLoginForm(); return false;">
+                        Faça login
+                    </a>
+                </p>
+                
+                <div class="social-buttons">
+                    <button onclick="handleGoogleLogin()" class="google-btn">
+                        <i class="fab fa-google"></i> Google
+                    </button>
+                    <button onclick="handleFacebookLogin()" class="facebook-btn">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <div class="toast" id="toast"></div>
+
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
+<script type="module" src="script.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🛡️ Sistema de segurança ativado');
+            
+            const safetyTimeout = setTimeout(function() {
+                const loading = document.getElementById('global-loading');
+                if (loading && loading.style.display !== 'none') {
+                    loading.style.opacity = '0';
+                    loading.style.transition = 'opacity 0.3s ease';
+                    setTimeout(function() {
+                        loading.style.display = 'none';
+                        console.log('✅ Loading removido por timeout de segurança');
+                    }, 300);
+                }
+                clearTimeout(safetyTimeout);
+            }, 2000);
+            
+            document.querySelectorAll('.filter-tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const sector = this.textContent.trim();
+                    filterBySector(sector);
+                });
+            });
+            
+            // Configurar funcionalidade dos termos
+            const termosCheckbox = document.getElementById('concordar-termos');
+            const aceitarTermosBtn = document.getElementById('aceitar-termos-btn');
+            
+            if (termosCheckbox && aceitarTermosBtn) {
+                termosCheckbox.addEventListener('change', function() {
+                    aceitarTermosBtn.disabled = !this.checked;
+                });
+                
+                aceitarTermosBtn.addEventListener('click', function() {
+                    showToast('Termos aceitos com sucesso!', 'success');
+                    hideTermosModal();
+                });
+            }
+        });
+        
+        function showTermosModal() {
+            document.getElementById('termos-modal').style.display = 'flex';
+        }
+        
+        function hideTermosModal() {
+            document.getElementById('termos-modal').style.display = 'none';
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            
+            if (type === 'success') {
+                toast.style.backgroundColor = 'var(--success)';
+            } else if (type === 'error') {
+                toast.style.backgroundColor = 'var(--danger)';
+            } else {
+                toast.style.backgroundColor = 'var(--info)';
+            }
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
 </body>
 </html>
