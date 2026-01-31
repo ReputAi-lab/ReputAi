@@ -1,124 +1,175 @@
 /*************************************************
- * REPUTAÍ - SCRIPT.JS (PRODUÇÃO FINAL)
- * Blindado contra erro de carregamento
+ * REPUTAÍ - SCRIPT PRINCIPAL
+ * Firestore-first | Layout preservado
  *************************************************/
 
-(async () => {
-  console.log("📦 [script] Inicializando ReputAí...");
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  increment,
+  serverTimestamp,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  let db = null;
+const db = getFirestore();
 
-  /* ================= FIREBASE ================= */
+let companies = [];
+let userLocation = null;
+
+/* ================= TOAST ================= */
+export function showToast(message, type = 'info') {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.className = `toast ${type} show`;
+
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+/* ================= CACHE ================= */
+function saveCompaniesCache(data) {
+  localStorage.setItem('reputai_companies', JSON.stringify(data));
+}
+
+function loadCompaniesCache() {
+  return JSON.parse(localStorage.getItem('reputai_companies') || '[]');
+}
+
+/* ================= EMPRESAS ================= */
+export async function loadCompanies() {
   try {
-    const firebase = await import("./firebase-config.js");
-    db = firebase.db;
-    console.log("🔥 [script] Firestore conectado");
+    const snapshot = await getDocs(collection(db, 'companies'));
+
+    companies = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+
+    saveCompaniesCache(companies);
+    console.log('🔥 Empresas carregadas do Firestore');
+
+  } catch (err) {
+    console.warn('⚠️ Firestore indisponível, usando cache local');
+    companies = loadCompaniesCache();
+  }
+
+  displayCompanies();
+}
+
+function displayCompanies() {
+  const grid = document.getElementById('companies-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  if (!companies.length) {
+    document.getElementById('no-companies')?.style.display = 'block';
+    return;
+  }
+
+  companies.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'company-card';
+
+    card.innerHTML = `
+      <h3>${c.name}</h3>
+      <p>${c.sector || 'Setor não informado'}</p>
+      <p>⭐ ${c.averageRating || 0} (${c.totalReviews || 0})</p>
+      <a href="avaliacao.html?companyId=${c.id}" class="btn btn-primary">
+        Avaliar
+      </a>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+/* ================= AVALIAÇÕES ================= */
+export async function saveEvaluation(evaluation) {
+  try {
+    // 1️⃣ Salva avaliação
+    await addDoc(collection(db, 'reviews'), {
+      companyId: evaluation.companyId,
+      rating: evaluation.rating,
+      environment: evaluation.environment,
+      benefits: evaluation.benefits || [],
+      createdAt: serverTimestamp()
+    });
+
+    // 2️⃣ Atualiza estatísticas da empresa
+    const companyRef = doc(db, 'companies', evaluation.companyId);
+
+    await updateDoc(companyRef, {
+      totalReviews: increment(1),
+      ratingSum: increment(evaluation.rating)
+    });
+
+    showToast('Avaliação enviada com sucesso!', 'success');
+    setTimeout(() => location.href = 'empresas.html', 1500);
+
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar avaliação', 'error');
+  }
+}
+
+/* ================= ESTATÍSTICAS ================= */
+export async function updateStats() {
+  try {
+    const companiesSnap = await getDocs(collection(db, 'companies'));
+    const reviewsSnap = await getDocs(collection(db, 'reviews'));
+
+    const companiesData = companiesSnap.docs.map(d => d.data());
+    const reviewsData = reviewsSnap.docs.map(d => d.data());
+
+    const sectors = [...new Set(companiesData.map(c => c.sector).filter(Boolean))];
+    const totalRating = reviewsData.reduce((s, r) => s + (r.rating || 0), 0);
+    const avgRating = reviewsData.length ? (totalRating / reviewsData.length).toFixed(1) : '0.0';
+
+    document.getElementById('total-empresas')?.textContent = companiesData.length;
+    document.getElementById('total-avaliacoes')?.textContent = reviewsData.length;
+    document.getElementById('media-geral')?.textContent = avgRating;
+    document.getElementById('total-setores')?.textContent = sectors.length;
+
   } catch (e) {
-    console.warn("⚠️ [script] Firestore indisponível, usando localStorage");
+    console.warn('⚠️ Estatísticas via cache');
+    const cached = loadCompaniesCache();
+    document.getElementById('total-empresas')?.textContent = cached.length;
+  }
+}
+
+/* ================= MAPA ================= */
+export function getCompaniesForMap() {
+  return companies.filter(c => c.lat && c.lng);
+}
+
+/* ================= GEO ================= */
+export function requestLocationPermission() {
+  if (!navigator.geolocation) {
+    showToast('Geolocalização não suportada', 'error');
+    return;
   }
 
-  /* ================= FIRESTORE SDK ================= */
-  async function fs() {
-    return await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      };
+      showToast('Localização obtida!', 'success');
+    },
+    () => showToast('Permissão negada', 'warning')
+  );
+}
 
-  /* ================= LOCAL STORAGE ================= */
-  function getLocal(key) {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  }
-
-  function setLocal(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  /* ================= EMPRESAS ================= */
-  async function loadCompanies() {
-    if (db) {
-      try {
-        const { collection, getDocs } = await fs();
-        const snap = await getDocs(collection(db, "companies"));
-        const companies = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setLocal("reputai_companies", companies);
-        return companies;
-      } catch (e) {
-        console.warn("⚠️ Firestore falhou, fallback local");
-      }
-    }
-    return getLocal("reputai_companies");
-  }
-
-  /* ================= AVALIAÇÕES ================= */
-  async function saveReview(review) {
-    if (db) {
-      try {
-        const { collection, addDoc, serverTimestamp } = await fs();
-        await addDoc(collection(db, "reviews"), {
-          ...review,
-          createdAt: serverTimestamp()
-        });
-        console.log("⭐ Avaliação salva no Firestore");
-        return true;
-      } catch (e) {
-        console.warn("⚠️ Falha Firestore, salvando local");
-      }
-    }
-
-    const reviews = getLocal("reputai_reviews");
-    reviews.push(review);
-    setLocal("reputai_reviews", reviews);
-    return true;
-  }
-
-  /* ================= ESTATÍSTICAS ================= */
-  async function updateCompanyStats(companyName, rating) {
-    if (!db) return;
-
-    try {
-      const {
-        collection,
-        query,
-        where,
-        getDocs,
-        addDoc,
-        updateDoc,
-        doc
-      } = await fs();
-
-      const q = query(collection(db, "companies"), where("name", "==", companyName));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        await addDoc(collection(db, "companies"), {
-          name: companyName,
-          sector: "Outros",
-          averageRating: rating,
-          reviewCount: 1
-        });
-        return;
-      }
-
-      const ref = doc(db, "companies", snap.docs[0].id);
-      const data = snap.docs[0].data();
-
-      const total = data.averageRating * data.reviewCount + rating;
-      const count = data.reviewCount + 1;
-
-      await updateDoc(ref, {
-        reviewCount: count,
-        averageRating: (total / count).toFixed(1)
-      });
-
-    } catch (e) {
-      console.warn("⚠️ Erro ao atualizar estatísticas");
-    }
-  }
-
-  /* ================= EXPORT GLOBAL ================= */
-  window.Reputai = {
-    loadCompanies,
-    saveReview,
-    updateCompanyStats
-  };
-
-  console.log("✅ [script] ReputAí carregado com sucesso");
-})();
+/* ================= INIT ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  loadCompanies();
+  updateStats();
+});
