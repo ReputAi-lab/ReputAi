@@ -5,815 +5,186 @@
     <title>Avaliar Empresa - ReputAí</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Avalie sua experiência de trabalho em empresas brasileiras">
-    
-    <!-- Preconnects otimizados -->
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Nosso CSS -->
+
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
-    
-    <style>
-        .page-header {
-            padding: 120px 0 60px;
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            text-align: center;
-        }
-        
-        .page-header h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .evaluation-section {
-            padding: 3rem 0 5rem;
-        }
-        
-        .back-home {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            background: var(--primary);
-            color: white;
-            text-decoration: none;
-            border-radius: var(--radius);
-            margin-top: 2rem;
-            transition: var(--transition);
-        }
-        
-        .back-home:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-        }
-        
-        .ambient-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin: 1rem 0;
-        }
-        
-        .ambient-option {
-            padding: 12px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-        
-        .ambient-option:hover {
-            border-color: var(--primary);
-        }
-        
-        .ambient-option.selected {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: white;
-        }
-        
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin: 1rem 0;
-        }
-        
-        .benefit-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: white;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .benefit-checkbox:hover {
-            border-color: var(--primary);
-        }
-        
-        .benefit-checkbox.selected {
-            border-color: var(--success);
-            background: #f0fdf4;
-        }
-        
-        .custom-benefit-input {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .custom-benefit-input input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-        }
-        
-        .custom-benefit-input button {
-            padding: 10px 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-        
-        .custom-benefit-input button:hover {
-            background: var(--primary-dark);
-        }
-        
-        .custom-benefits-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        
-        .custom-benefit-tag {
-            background: var(--primary);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .custom-benefit-tag button {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .custom-benefit-tag button:hover {
-            opacity: 0.8;
-        }
-        
-        .salary-range {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .salary-range input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-        }
-        
-        .salary-range select {
-            padding: 10px;
-            border: 2px solid var(--gray-light);
-            border-radius: var(--radius);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-        }
-        
-        @media (max-width: 768px) {
-            .page-header h1 {
-                font-size: 2rem;
-            }
-            
-            .ambient-options {
-                grid-template-columns: 1fr;
-            }
-            
-            .benefits-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .custom-benefit-input {
-                flex-direction: column;
-            }
-            
-            .salary-range {
-                flex-direction: column;
-            }
-        }
-    </style>
 </head>
+
 <body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <a href="index.html" class="logo">
-                    <div class="logo-icon">R</div>
-                    <div class="logo-text">
-                        <h1>ReputAí</h1>
-                        <span>Avaliações reais de empresas</span>
-                    </div>
-                </a>
-                
-                <nav>
-                    <ul>
-                        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
-                        <li><a href="index.html#mapa"><i class="fas fa-map"></i> Mapa</a></li>
-                        <li><a href="empresas.html"><i class="fas fa-building"></i> Empresas</a></li>
-                        <li><a href="avaliacao.html" class="active"><i class="fas fa-star"></i> Avaliar</a></li>
-                        <li><a href="index.html#como-funciona"><i class="fas fa-question-circle"></i> Como Funciona</a></li>
-                        <li id="auth-nav-item">
-                            <div class="user-menu-container">
-                                <div class="user-avatar" id="user-avatar" style="display: none;"></div>
-                                <div class="user-menu" id="user-menu" style="display: none;"></div>
+
+<!-- LOADING -->
+<div id="global-loading">
+    <div class="loading-spinner"></div>
+    <h2>ReputAí</h2>
+    <p>Carregando...</p>
+</div>
+
+<!-- HEADER -->
+<header id="main-header">
+    <div class="container">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">R</div>
+                <div class="logo-text">
+                    <h1>ReputAí</h1>
+                    <span>Avaliações reais de empresas</span>
+                </div>
+            </a>
+
+            <nav>
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-home"></i> Início</a></li>
+                    <li><a href="mapa.html"><i class="fas fa-map"></i> Mapa</a></li>
+                    <li><a href="empresas.html"><i class="fas fa-building"></i> Empresas</a></li>
+                    <li><a href="avaliacao.html" class="active"><i class="fas fa-star"></i> Avaliar</a></li>
+
+                    <li id="auth-nav-item">
+                        <div class="user-menu-container">
+                            <div class="user-avatar" id="user-avatar" style="display:none" onclick="toggleUserMenu()"></div>
+                            <div class="user-menu" id="user-menu" style="display:none">
+                                <a href="perfil.html"><i class="fas fa-user"></i> Meu Perfil</a>
+                                <a href="admin.html" id="admin-link" style="display:none">
+                                    <i class="fas fa-crown"></i> Painel Admin
+                                </a>
+                                <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
                             </div>
-                            <a href="#" class="nav-btn" id="login-btn">
-                                <i class="fas fa-user"></i> Entrar
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    </header>
+                        </div>
 
-    <!-- Page Header -->
-    <section class="page-header">
-        <div class="container">
-            <h1>Avaliar uma Empresa</h1>
-            <p>Compartilhe sua experiência para ajudar outros profissionais</p>
+                        <a href="#" class="nav-btn" id="login-btn" onclick="showAuthModal(); return false;">
+                            <i class="fas fa-user"></i> Entrar
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
-    </section>
+    </div>
+</header>
 
-    <!-- Evaluation Section -->
-    <section class="evaluation-section">
-        <div class="container">
-            <div class="evaluation-card">
-                <h3 style="margin-bottom: 1.5rem;">Conte sua experiência de trabalho</h3>
-                
+<!-- PAGE HEADER -->
+<section class="page-header">
+    <div class="container">
+        <h1><i class="fas fa-star"></i> Avaliar uma Empresa</h1>
+        <p>Compartilhe sua experiência para ajudar outros profissionais</p>
+    </div>
+</section>
+
+<!-- FORM -->
+<section class="evaluation-section">
+    <div class="container">
+        <div class="evaluation-card">
+
+            <form id="evaluation-form" onsubmit="submitEvaluation(event)">
+
+                <!-- EMPRESA -->
                 <div class="form-group">
-                    <label>Nome da Empresa *</label>
-                    <input type="text" id="evaluate-company" placeholder="Digite o nome da empresa que você trabalhou">
-                    <small style="color: var(--gray); display: block; margin-top: 5px;">
-                        Não encontra a empresa? Ela será cadastrada automaticamente para todos os usuários
-                    </small>
+                    <label><i class="fas fa-building"></i> Nome da Empresa</label>
+                    <input type="text" id="company-name" required>
                 </div>
-                
+
+                <!-- ESTRELAS -->
                 <div class="form-group">
-                    <label>Setor da Empresa</label>
-                    <select id="evaluate-sector">
-                        <option value="">Selecione o setor (opcional)</option>
-                        <option value="Tecnologia">Tecnologia</option>
-                        <option value="Finanças">Finanças</option>
-                        <option value="Saúde">Saúde</option>
-                        <option value="Varejo">Varejo</option>
-                        <option value="Serviços">Serviços</option>
-                        <option value="Energia">Energia</option>
-                        <option value="Educação">Educação</option>
-                        <option value="Indústria">Indústria</option>
-                        <option value="Construção Civil">Construção Civil</option>
-                        <option value="Agronegócio">Agronegócio</option>
-                        <option value="Outros">Outros</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Localização da Empresa</label>
-                    <input type="text" id="evaluate-location" placeholder="Cidade, Estado (opcional)">
-                </div>
-                
-                <!-- Opção de Avaliação Anônima -->
-                <div class="anonimo-option">
-                    <div>
-                        <input type="checkbox" id="avaliacao-anonima">
-                        <label for="avaliacao-anonima">
-                            Tornar minha avaliação anônima (seu nome não será exibido publicamente)
-                        </label>
-                        <small>
-                            Sua identidade será mantida em sigilo para outros usuários, mas permanecerá em nossos registros para fins de moderação e conformidade legal.
-                        </small>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>Avaliação Geral *</label>
+                    <label><i class="fas fa-star"></i> Nota Geral</label>
                     <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5">
-                        <label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4">
-                        <label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3">
-                        <label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2">
-                        <label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1">
-                        <label for="star1">★</label>
+                        <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
                     </div>
                 </div>
-                
-                <!-- Seção de Ambiente de Trabalho -->
-                <div class="optional-section">
-                    <h4><i class="fas fa-users"></i> Ambiente de Trabalho (Opcional)</h4>
-                    <div class="ambient-options">
-                        <div class="ambient-option" data-value="ótimo">
-                            <i class="fas fa-laugh-beam"></i> Ótimo
-                        </div>
-                        <div class="ambient-option" data-value="bom">
-                            <i class="fas fa-smile"></i> Bom
-                        </div>
-                        <div class="ambient-option" data-value="normal">
-                            <i class="fas fa-meh"></i> Normal
-                        </div>
-                        <div class="ambient-option" data-value="ruim">
-                            <i class="fas fa-frown"></i> Ruim
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Seção de Benefícios -->
-                <div class="optional-section">
-                    <h4><i class="fas fa-gift"></i> Benefícios (Opcional)</h4>
-                    <p style="color: var(--gray); margin-bottom: 10px;">Selecione os benefícios que a empresa oferece:</p>
-                    
-                    <div class="benefits-grid">
-                        <div class="benefit-checkbox" data-value="Plano de Saúde">
-                            <i class="fas fa-heartbeat"></i> Plano de Saúde
-                        </div>
-                        <div class="benefit-checkbox" data-value="Vale Alimentação">
-                            <i class="fas fa-utensils"></i> Vale Alimentação
-                        </div>
-                        <div class="benefit-checkbox" data-value="Vale Refeição">
-                            <i class="fas fa-coffee"></i> Vale Refeição
-                        </div>
-                        <div class="benefit-checkbox" data-value="Vale Transporte">
-                            <i class="fas fa-bus"></i> Vale Transporte
-                        </div>
-                        <div class="benefit-checkbox" data-value="Seguro de Vida">
-                            <i class="fas fa-shield-alt"></i> Seguro de Vida
-                        </div>
-                        <div class="benefit-checkbox" data-value="Home Office">
-                            <i class="fas fa-home"></i> Home Office
-                        </div>
-                        <div class="benefit-checkbox" data-value="Flexibilidade Horários">
-                            <i class="fas fa-clock"></i> Flexibilidade de Horários
-                        </div>
-                        <div class="benefit-checkbox" data-value="PLR/PPR">
-                            <i class="fas fa-money-bill-wave"></i> PLR/PPR
-                        </div>
-                        <div class="benefit-checkbox" data-value="Gympass/Academia">
-                            <i class="fas fa-dumbbell"></i> Gympass/Academia
-                        </div>
-                        <div class="benefit-checkbox" data-value="Day Off Aniversário">
-                            <i class="fas fa-birthday-cake"></i> Day Off Aniversário
-                        </div>
-                    </div>
-                    
-                    <!-- Benefícios personalizados -->
-                    <div style="margin-top: 1rem;">
-                        <p style="color: var(--gray); margin-bottom: 5px;">Adicionar benefício personalizado:</p>
-                        <div class="custom-benefit-input">
-                            <input type="text" id="custom-benefit" placeholder="Ex: Bolsa de estudos, Auxílio creche...">
-                            <button id="add-custom-benefit-btn"><i class="fas fa-plus"></i> Adicionar</button>
-                        </div>
-                        <div class="custom-benefits-list" id="custom-benefits-list"></div>
-                    </div>
-                </div>
-                
-                <!-- Seção de Salário -->
-                <div class="optional-section">
-                    <h4><i class="fas fa-money-bill-wave"></i> Faixa Salarial (Opcional)</h4>
-                    <div class="salary-range">
-                        <input type="text" id="salary-amount" placeholder="Ex: 5000">
-                        <select id="salary-period">
-                            <option value="mensal">Mensal</option>
-                            <option value="anual">Anual</option>
-                        </select>
-                    </div>
-                </div>
-                
+
+                <!-- AMBIENTE -->
                 <div class="form-group">
-                    <label>Sua Avaliação * (mínimo 50 caracteres)</label>
-                    <textarea id="evaluation-text" placeholder="Conte sua experiência de trabalho de forma detalhada..." rows="5"></textarea>
+                    <label><i class="fas fa-users"></i> Ambiente de Trabalho</label>
+                    <div class="ambient-options">
+                        <div class="ambient-option" onclick="selectAmbientOption('excelente')">😄 Excelente</div>
+                        <div class="ambient-option" onclick="selectAmbientOption('bom')">🙂 Bom</div>
+                        <div class="ambient-option" onclick="selectAmbientOption('neutro')">😐 Neutro</div>
+                        <div class="ambient-option" onclick="selectAmbientOption('ruim')">☹️ Ruim</div>
+                    </div>
                 </div>
-                
-                <button class="btn btn-primary" id="submit-evaluation-btn" style="width: 100%; padding: 15px;">
-                    <i class="fas fa-paper-plane"></i> Enviar Avaliação
-                </button>
-                
-                <p style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: var(--gray);">
-                    <i class="fas fa-info-circle"></i> Ao enviar, você concorda com nossa política de avaliações
-                </p>
-            </div>
-            
-            <div style="text-align: center; margin-top: 3rem;">
-                <a href="index.html" class="back-home">
-                    <i class="fas fa-arrow-left"></i> Voltar para Home
-                </a>
-            </div>
-        </div>
-    </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <div class="logo-icon">R</div>
-                    <h3>ReputAí</h3>
-                    <p>Avaliações reais de empresas brasileiras</p>
-                </div>
-                
-                <div class="footer-links">
-                    <h4>Links Rápidos</h4>
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="index.html#mapa">Mapa</a></li>
-                        <li><a href="empresas.html">Empresas</a></li>
-                        <li><a href="avaliacao.html">Avaliar</a></li>
-                        <li><a href="index.html#como-funciona">Como Funciona</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-contact">
-                    <h4>Contato</h4>
-                    <p><i class="fas fa-envelope"></i> contato@reputai.com.br</p>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>© 2024 ReputAí. Todos os direitos reservados.</p>
-            </div>
-        </div>
-    </footer>
+                <!-- BENEFÍCIOS -->
+                <div class="form-group">
+                    <label><i class="fas fa-gift"></i> Benefícios</label>
+                    <div class="benefits-grid">
+                        <div class="benefit-checkbox" onclick="toggleBenefit('vale-refeicao')">🍽 Vale Refeição</div>
+                        <div class="benefit-checkbox" onclick="toggleBenefit('vale-alimentacao')">🥗 Vale Alimentação</div>
+                        <div class="benefit-checkbox" onclick="toggleBenefit('plano-saude')">❤️ Plano de Saúde</div>
+                        <div class="benefit-checkbox" onclick="toggleBenefit('plano-odontologico')">🦷 Plano Odontológico</div>
+                        <div class="benefit-checkbox" onclick="toggleBenefit('home-office')">🏠 Home Office</div>
+                        <div class="benefit-checkbox" onclick="toggleBenefit('bonus')">💰 Bônus / PLR</div>
+                    </div>
 
-    <!-- Auth Modal -->
-    <div class="modal-overlay" id="auth-modal">
-        <div class="auth-modal">
-            <button class="modal-close">&times;</button>
-            <div class="modal-header">
-                <h2>Bem-vindo ao ReputAí</h2>
-                <p>Entre para avaliar empresas</p>
-            </div>
-            
-            <div class="tab-content">
-                <div id="login-tab" class="tab-pane active">
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="login-email" placeholder="seu@email.com">
+                    <div class="custom-benefit-input">
+                        <input type="text" id="custom-benefit" placeholder="Benefício personalizado">
+                        <button type="button" onclick="addCustomBenefit()">Adicionar</button>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>Senha</label>
-                        <input type="password" id="login-password" placeholder="Sua senha">
-                    </div>
-                    
-                    <button class="btn btn-primary" id="login-submit-btn" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-sign-in-alt"></i> Entrar
-                    </button>
-                    
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Ainda não tem conta? <a href="#" id="show-register-link">Cadastre-se</a></p>
-                    </div>
+
+                    <div id="custom-benefits-list"></div>
                 </div>
-                
-                <div id="register-tab" class="tab-pane" style="display: none;">
-                    <div class="form-group">
-                        <label>Nome Completo *</label>
-                        <input type="text" id="register-name" placeholder="Seu nome completo">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Email *</label>
-                        <input type="email" id="register-email" placeholder="seu@email.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Senha *</label>
-                        <input type="password" id="register-password" placeholder="Mínimo 6 caracteres">
-                    </div>
-                    
-                    <button class="btn btn-primary" id="register-submit-btn" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-user-plus"></i> Criar Conta
-                    </button>
-                    
-                    <div style="text-align: center; margin-top: 1rem;">
-                        <p style="color: var(--gray);">Já tem conta? <a href="#" id="show-login-link">Entre aqui</a></p>
-                    </div>
+
+                <!-- REMUNERAÇÃO -->
+                <div class="form-group">
+                    <label><i class="fas fa-money-bill-wave"></i> Remuneração (opcional)</label>
+                    <input type="number" id="salary-amount" placeholder="Valor mensal">
                 </div>
-            </div>
+
+                <!-- TEXTO -->
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> Avaliação Detalhada</label>
+                    <textarea id="review-text" rows="6" minlength="50" maxlength="1000" required></textarea>
+                </div>
+
+                <!-- ANÔNIMO -->
+                <div class="anonimo-option">
+                    <label>
+                        <input type="checkbox" id="anonimo">
+                        Publicar de forma anônima
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Enviar Avaliação
+                    </button>
+                </div>
+
+            </form>
+
         </div>
     </div>
+</section>
 
-    <!-- Modal de Aviso -->
-    <div class="modal-overlay" id="aviso-modal" style="display: none;">
-        <div class="auth-modal" style="max-width: 500px;">
-            <button class="modal-close">&times;</button>
-            <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                <h2><i class="fas fa-exclamation-triangle"></i> ATENÇÃO: Política de Avaliações</h2>
-                <p>Leia atentamente antes de prosseguir</p>
-            </div>
-            
-            <div class="tab-content" style="padding: 1.5rem;">
-                <div class="aviso-content">
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                        <i class="fas fa-check-circle" style="color: #3b82f6; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Avaliações devem ser baseadas em experiência real</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Sua avaliação deve refletir sua experiência pessoal na empresa
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #fef2f2; border-radius: 8px; border-left: 4px solid #dc2626;">
-                        <i class="fas fa-times-circle" style="color: #dc2626; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Não são permitidas avaliações copiadas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Avaliações de outros sites ou fontes externas serão removidas
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="aviso-item" style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <i class="fas fa-shield-alt" style="color: #10b981; margin-top: 2px;"></i>
-                        <div>
-                            <strong>Apenas avaliações feitas em nosso site são válidas</strong>
-                            <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                Este sistema aceita apenas avaliações feitas diretamente aqui
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="termos-uso" style="margin-top: 1.5rem; padding: 15px; background: #f8fafc; border-radius: var(--radius);">
-                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                            <input type="checkbox" id="concordar-avisos" style="margin-top: 5px;">
-                            <div>
-                                <label for="concordar-avisos" style="font-weight: 500; cursor: pointer;">
-                                    Concordo com os termos acima e confirmo que:
-                                </label>
-                                <ul style="margin-top: 10px; padding-left: 20px; font-size: 0.9rem; color: var(--gray);">
-                                    <li>Esta avaliação é baseada em minha experiência pessoal</li>
-                                    <li>Não estou copiando conteúdo de outros sites</li>
-                                    <li>Estou sendo honesto e objetivo em minha avaliação</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button class="btn btn-secondary" id="cancelar-avaliacao-btn" style="flex: 1;">
-                        Cancelar
-                    </button>
-                    <button class="btn btn-primary" id="prosseguir-avaliacao" style="flex: 1;" disabled>
-                        <i class="fas fa-check"></i> Concordo e Prosseguir
-                    </button>
-                </div>
-            </div>
-        </div>
+<!-- FOOTER -->
+<footer>
+    <div class="container">
+        <p>&copy; 2026 ReputAí. Todos os direitos reservados.</p>
     </div>
+</footer>
 
-    <!-- Modal de Termos de Uso -->
-    <div class="modal-overlay" id="termos-modal" style="display: none;">
-        <div class="auth-modal" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
-            <button class="modal-close" onclick="hideTermosModal()">&times;</button>
-            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #334155);">
-                <h2><i class="fas fa-scale-balanced"></i> Termos de Uso e Política de Privacidade</h2>
-                <p>Leia atentamente antes de usar a plataforma</p>
-            </div>
-            <div class="tab-content" style="padding: 1.5rem;">
-                <div class="termos-content">
-                    <p>Bem-vindo ao ReputAí. Ao utilizar nossa plataforma, você concorda com os seguintes termos:</p>
-                    
-                    <h4>1. Objetivo da Plataforma</h4>
-                    <p>O ReputAí tem como objetivo fornecer um espaço para que profissionais compartilhem suas experiências de trabalho em empresas brasileiras, ajudando outros profissionais a tomarem decisões informadas sobre suas carreiras. Nosso compromisso é com a transparência e a legalidade, respeitando as leis vigentes no país, especialmente o Marco Civil da Internet e a LGPD.</p>
-                    
-                    <h4>2. Responsabilidade do Usuário</h4>
-                    <p>Você é responsável pelas avaliações que publicar. Garanta que suas avaliações sejam baseadas em experiências reais e não contenham:</p>
-                    <ul>
-                        <li>Calúnia, difamação ou injúria;</li>
-                        <li>Informações falsas ou enganosas;</li>
-                        <li>Conteúdo ofensivo, discriminatório ou que incite o ódio;</li>
-                        <li>Dados pessoais de terceiros sem consentimento;</li>
-                        <li>Qualquer violação de direitos intelectuais.</li>
-                    </ul>
-                    <p><strong>Em caso de medidas judiciais, o usuário será o único responsável pelo conteúdo de sua avaliação.</strong></p>
-                    
-                    <h4>3. Moderação e Denúncias</h4>
-                    <p>Reservamos o direito de remover avaliações que violem nossos termos. As avaliações denunciadas serão ocultadas automaticamente até análise. Oferecemos um canal para denúncias e para que empresas exercitem seu direito de resposta.</p>
-                    
-                    <h4>4. Privacidade e Anonimato</h4>
-                    <p>Respeitamos sua privacidade. Oferecemos a opção de avaliação anônima, onde seu nome não será exibido publicamente. No entanto, para fins de moderação e cumprimento da lei, mantemos registros internos (como e-mail e IP) por pelo menos 6 meses.</p>
-                    
-                    <h4>5. Direito de Resposta</h4>
-                    <p>Empresas têm o direito de responder a avaliações em um prazo razoável. As respostas serão publicadas abaixo da avaliação correspondente.</p>
-                    
-                    <h4>6. Conformidade Legal</h4>
-                    <p>Nos comprometemos a cumprir todas as leis brasileiras, incluindo a LGPD e o Marco Civil da Internet. Em caso de solicitação judicial, forneceremos os registros necessários.</p>
-                    
-                    <div class="termos-check">
-                        <div style="display: flex; align-items: flex-start; gap: 10px;">
-                            <input type="checkbox" id="concordar-termos" style="margin-top: 5px;">
-                            <div>
-                                <label for="concordar-termos" style="font-weight: 500; cursor: pointer;">
-                                    <strong>Eu li e concordo com os Termos de Uso e Política de Privacidade do ReputAí.</strong>
-                                </label>
-                                <p style="font-size: 0.9rem; color: var(--gray); margin-top: 5px;">
-                                    Ao marcar esta opção, você confirma que é maior de 18 anos e aceita todas as condições acima.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
-                    <button class="btn btn-secondary" onclick="hideTermosModal()" style="flex: 1;">
-                        Cancelar
-                    </button>
-                    <button class="btn btn-primary" id="aceitar-termos-btn" style="flex: 1;" disabled>
-                        <i class="fas fa-check"></i> Aceitar e Continuar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="toast" id="toast"></div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+<!-- SCRIPTS -->
+<script type="module" src="firebase-config.js"></script>
+<script type="module" src="auth.js"></script>
+<script type="module" src="script.js"></script>
 
-    <!-- Scripts NA ORDEM CORRETA -->
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
-    <!-- Nossa configuração Firebase -->
-    <script src="firebase-config.js"></script>
-    
-    <!-- Nossos Scripts NA ORDEM CORRETA -->
-    <script src="script.js"></script>
-    <script src="auth.js"></script>
-    <script src="init.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof loadCurrentUserFromStorage === 'function') loadCurrentUserFromStorage();
+    if (typeof updateUI === 'function') updateUI();
+    setTimeout(() => document.getElementById('global-loading').style.display = 'none', 800);
+});
+</script>
 
-    <!-- Configuração da página de avaliação -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('⭐ Configurando página de avaliação...');
-            
-            // Configurar botão de envio de avaliação
-            const submitBtn = document.getElementById('submit-evaluation-btn');
-            if (submitBtn) {
-                submitBtn.addEventListener('click', function() {
-                    if (typeof verificarAvaliacao === 'function') {
-                        verificarAvaliacao();
-                    }
-                });
-            }
-            
-            // Configurar botão de adicionar benefício customizado
-            const addBenefitBtn = document.getElementById('add-custom-benefit-btn');
-            if (addBenefitBtn) {
-                addBenefitBtn.addEventListener('click', function() {
-                    if (typeof addCustomBenefit === 'function') {
-                        addCustomBenefit();
-                    }
-                });
-            }
-            
-            // Configurar campos de ambiente
-            const ambientOptions = document.querySelectorAll('.ambient-option');
-            ambientOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    if (typeof selectAmbientOption === 'function') {
-                        selectAmbientOption(this);
-                    }
-                });
-            });
-            
-            // Configurar campos de benefícios
-            const benefitCheckboxes = document.querySelectorAll('.benefit-checkbox');
-            benefitCheckboxes.forEach(benefit => {
-                benefit.addEventListener('click', function() {
-                    if (typeof toggleBenefit === 'function') {
-                        toggleBenefit(this);
-                    }
-                });
-            });
-            
-            // Configurar eventos de salvamento automático
-            const inputsToSave = ['evaluate-company', 'evaluation-text', 'evaluate-sector', 'evaluate-location', 'avaliacao-anonima'];
-            inputsToSave.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', function() {
-                        if (typeof saveEvaluationDraft === 'function') {
-                            saveEvaluationDraft();
-                        }
-                    });
-                    
-                    if (element.type === 'checkbox') {
-                        element.addEventListener('change', function() {
-                            if (typeof saveEvaluationDraft === 'function') {
-                                saveEvaluationDraft();
-                            }
-                        });
-                    }
-                }
-            });
-            
-            // Configurar botões do modal de autenticação
-            const loginSubmitBtn = document.getElementById('login-submit-btn');
-            const registerSubmitBtn = document.getElementById('register-submit-btn');
-            const showRegisterLink = document.getElementById('show-register-link');
-            const showLoginLink = document.getElementById('show-login-link');
-            
-            if (loginSubmitBtn) {
-                loginSubmitBtn.addEventListener('click', function() {
-                    if (typeof login === 'function') {
-                        login();
-                    }
-                });
-            }
-            
-            if (registerSubmitBtn) {
-                registerSubmitBtn.addEventListener('click', function() {
-                    if (typeof register === 'function') {
-                        register();
-                    }
-                });
-            }
-            
-            if (showRegisterLink) {
-                showRegisterLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (typeof showRegisterForm === 'function') {
-                        showRegisterForm();
-                    }
-                });
-            }
-            
-            if (showLoginLink) {
-                showLoginLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (typeof showLoginForm === 'function') {
-                        showLoginForm();
-                    }
-                });
-            }
-            
-            // Configurar modal de aviso
-            const concordarCheckbox = document.getElementById('concordar-avisos');
-            const prosseguirBtn = document.getElementById('prosseguir-avaliacao');
-            const cancelarBtn = document.getElementById('cancelar-avaliacao-btn');
-            
-            if (concordarCheckbox && prosseguirBtn) {
-                concordarCheckbox.addEventListener('change', function() {
-                    prosseguirBtn.disabled = !this.checked;
-                });
-            }
-            
-            if (prosseguirBtn) {
-                prosseguirBtn.addEventListener('click', function() {
-                    if (typeof prosseguirAvaliacao === 'function') {
-                        prosseguirAvaliacao();
-                    }
-                });
-            }
-            
-            if (cancelarBtn) {
-                cancelarBtn.addEventListener('click', function() {
-                    if (typeof hideAvisoModal === 'function') {
-                        hideAvisoModal();
-                    }
-                });
-            }
-            
-            // Carregar rascunho com delay
-            setTimeout(() => {
-                if (typeof loadEvaluationDraft === 'function') {
-                    loadEvaluationDraft();
-                }
-            }, 1000);
-        });
-    </script>
 </body>
 </html>
