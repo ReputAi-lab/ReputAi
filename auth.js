@@ -1,102 +1,62 @@
-/*************************************************
- * REPUTAÍ - AUTH.JS (PRODUÇÃO FINAL)
- * Funciona com ou sem <script type="module">
- *************************************************/
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-(async () => {
-  console.log("🔐 [auth] Carregando interface de autenticação...");
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const { auth, db } = await import("./firebase-config.js");
+import { app } from "./firebase-config.js";
 
-  const {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-  } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-  const {
-    doc,
-    setDoc,
-    getDoc,
-    serverTimestamp
-  } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+export function observeAuth(callback) {
+  onAuthStateChanged(auth, async firebaseUser => {
+    if (!firebaseUser) {
+      callback(null);
+      return;
+    }
 
-  let currentUser = null;
+    const userRef = doc(db, "users", firebaseUser.uid);
+    const snap = await getDoc(userRef);
 
-  function saveUserLocal(user) {
-    localStorage.setItem("reputai_user", JSON.stringify(user));
-  }
+    let role = "user";
 
-  function clearUserLocal() {
-    localStorage.removeItem("reputai_user");
-  }
+    if (!snap.exists()) {
+      await setDoc(userRef, {
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || "",
+        role: "user",
+        createdAt: serverTimestamp()
+      });
+    } else {
+      role = snap.data().role || "user";
+    }
 
-  async function register(name, email, password) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-    const userData = {
-      uid: cred.user.uid,
-      name,
-      email,
-      role: "user",
-      createdAt: serverTimestamp()
-    };
-
-    await setDoc(doc(db, "users", cred.user.uid), userData);
-    saveUserLocal(userData);
-    currentUser = userData;
-
-    return userData;
-  }
-
-  async function login(email, password) {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    const snap = await getDoc(doc(db, "users", cred.user.uid));
-
-    if (!snap.exists()) throw new Error("Usuário não encontrado");
-
-    const userData = { uid: cred.user.uid, ...snap.data() };
-    saveUserLocal(userData);
-    currentUser = userData;
-
-    return userData;
-  }
-
-  async function logout() {
-    await signOut(auth);
-    clearUserLocal();
-    currentUser = null;
-  }
-
-  function observeAuth(callback) {
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        currentUser = null;
-        callback(null);
-        return;
-      }
-
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (!snap.exists()) {
-        callback(null);
-        return;
-      }
-
-      currentUser = { uid: user.uid, ...snap.data() };
-      saveUserLocal(currentUser);
-      callback(currentUser);
+    callback({
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      role
     });
-  }
+  });
+}
 
-  // 🔥 EXPOSIÇÃO GLOBAL (CORREÇÃO CRÍTICA)
-  window.authService = {
-    register,
-    login,
-    logout,
-    observeAuth,
-    getCurrentUser: () => currentUser
-  };
+export async function login() {
+  await signInWithPopup(auth, provider);
+}
 
-  console.log("✅ [auth] Interface de autenticação carregada");
-})();
+export async function logout() {
+  await signOut(auth);
+  location.href = "index.html";
+}
