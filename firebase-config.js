@@ -1,11 +1,16 @@
 /*************************************************
  * REPUTAÍ - FIREBASE CONFIG (PRODUÇÃO)
+ * Firestore como base principal
  *************************************************/
+
+/* ================= IMPORTAÇÕES ================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+
+/* ================= CONFIGURAÇÃO ================= */
 
 const firebaseConfig = {
   apiKey: "AIzaSyCikJ1Cf_AS8tfKgythZdUqeyUAc96z7Eg",
@@ -17,10 +22,16 @@ const firebaseConfig = {
   measurementId: "G-YSDPPXKD8C"
 };
 
+/* ================= INICIALIZAÇÃO ================= */
+
 const app = initializeApp(firebaseConfig);
+
+/* ================= SERVIÇOS ================= */
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 const analytics = getAnalytics(app);
 
-export { app, auth, db, analytics };
+/* ================= EXPORTAÇÃO ================= */
+
+export { auth, db, analytics };
