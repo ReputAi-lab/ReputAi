@@ -1,152 +1,188 @@
-/*************************************************
- * REPUTAÍ - SCRIPT.JS (PRODUÇÃO FINAL REAL)
- * Firestore como fonte única de dados
- *************************************************/
+// script.js - Configuração principal ATUALIZADA PARA FIRESTORE
 
-import { db } from "./firebase-config.js";
+import { db } from './firebase-config.js';
 import {
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  where,
-  doc,
-  updateDoc,
-  serverTimestamp
+    collection,
+    getDocs,
+    addDoc,
+    updateDoc,
+    doc,
+    query,
+    where,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* ================= UTIL ================= */
+let currentUser = null;
+let userLocation = null;
+let locationPermission = false;
+let typingInterval = null;
+let map = null;
+let companies = [];
+let evaluationData = null;
 
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.classList.add("show");
-
-  setTimeout(() => {
-    toast.classList.remove("show");
-  }, 3000);
-}
-
-/* ================= EMPRESAS ================= */
-
-export async function loadCompanies() {
-  const snapshot = await getDocs(collection(db, "companies"));
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
-}
-
-/* ================= AVALIAÇÕES ================= */
-
-export async function submitEvaluation(event) {
-  event.preventDefault();
-
-  if (!window.ReputaiState.user) {
-    showToast("Você precisa estar logado para avaliar.");
-    return;
-  }
-
-  const companyName = document.getElementById("company-name").value.trim();
-  const ratingInput = document.querySelector("input[name='rating']:checked");
-  const reviewText = document.getElementById("review-text").value.trim();
-  const anonimo = document.getElementById("anonimo").checked;
-
-  if (!companyName || !ratingInput || reviewText.length < 50) {
-    showToast("Preencha todos os campos corretamente.");
-    return;
-  }
-
-  const rating = Number(ratingInput.value);
-
-  await addDoc(collection(db, "reviews"), {
-    companyName,
-    rating,
-    text: reviewText,
-    anonymous: anonimo,
-    userId: window.ReputaiState.user.uid,
-    createdAt: serverTimestamp()
-  });
-
-  await updateCompanyStats(companyName, rating);
-
-  showToast("Avaliação enviada com sucesso!");
-  event.target.reset();
-}
-
-/* ================= ESTATÍSTICAS ================= */
-
-async function updateCompanyStats(companyName, rating) {
-  const q = query(
-    collection(db, "companies"),
-    where("name", "==", companyName)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    await addDoc(collection(db, "companies"), {
-      name: companyName,
-      sector: "Outros",
-      averageRating: rating,
-      reviewCount: 1
+// ==================== HEADER SCROLL ====================
+function initHeaderScroll() {
+    window.addEventListener('scroll', function() {
+        const header = document.querySelector('header');
+        if (!header) return;
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
     });
-    return;
-  }
-
-  const companyDoc = snap.docs[0];
-  const data = companyDoc.data();
-
-  const total = data.averageRating * data.reviewCount + rating;
-  const newCount = data.reviewCount + 1;
-  const newAverage = total / newCount;
-
-  await updateDoc(doc(db, "companies", companyDoc.id), {
-    reviewCount: newCount,
-    averageRating: newAverage
-  });
 }
 
-/* ================= PERFIL ================= */
+// ==================== EMPRESAS - FIRESTORE ====================
+async function loadCompanies() {
+    try {
+        const snapshot = await getDocs(collection(db, "companies"));
+        companies = snapshot.docs.map(docSnap => ({
+            id: docSnap.id,
+            ...docSnap.data()
+        }));
 
-export async function loadUserReviews() {
-  if (!window.ReputaiState.user) return [];
+        window.companies = companies;
+        return companies;
 
-  const q = query(
-    collection(db, "reviews"),
-    where("userId", "==", window.ReputaiState.user.uid)
-  );
-
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map(doc => doc.data());
+    } catch (error) {
+        console.error("Erro ao carregar empresas:", error);
+        showToast("Erro ao carregar empresas", "error");
+        return [];
+    }
 }
 
-/* ================= MOBILE SCROLL ================= */
+async function loadHomeCompanies() {
+    const all = await loadCompanies();
+    displayCompanies(all.slice(0, 4));
+    if (map) addCompaniesToMap(all.slice(0, 4));
+}
 
-let lastScrollTop = 0;
+// ==================== AVALIAÇÃO - FIRESTORE ====================
+async function submitEvaluation(evalData) {
+    try {
+        const companiesRef = collection(db, "companies");
+        const q = query(companiesRef, where("name", "==", evalData.companyName));
+        const snap = await getDocs(q);
 
-window.addEventListener("scroll", () => {
-  const header = document.getElementById("main-header");
-  if (!header) return;
+        let companyId;
+        let companyData;
 
-  const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+        if (snap.empty) {
+            const newCompany = await addDoc(companiesRef, {
+                name: evalData.companyName,
+                sector: evalData.sector,
+                location: evalData.location,
+                description: `Empresa cadastrada através de avaliação`,
+                averageRating: evalData.rating,
+                reviewCount: 1,
+                createdAt: serverTimestamp()
+            });
 
-  if (currentScroll > lastScrollTop && currentScroll > 50) {
-    header.classList.add("hide");
-  } else {
-    header.classList.remove("hide");
-  }
+            companyId = newCompany.id;
+            companyData = { averageRating: evalData.rating, reviewCount: 1 };
 
-  lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
-});
+        } else {
+            const companyDoc = snap.docs[0];
+            companyId = companyDoc.id;
+            companyData = companyDoc.data();
 
-/* ================= EXPORT GLOBAL ================= */
+            const newCount = companyData.reviewCount + 1;
+            const newAverage =
+                ((companyData.averageRating * companyData.reviewCount) + evalData.rating) / newCount;
 
-window.Reputai = {
-  loadCompanies,
-  submitEvaluation,
-  loadUserReviews
-};
+            await updateDoc(doc(db, "companies", companyId), {
+                reviewCount: newCount,
+                averageRating: newAverage
+            });
+        }
+
+        await addDoc(collection(db, "evaluations"), {
+            companyId,
+            userId: currentUser ? currentUser.id : "anon",
+            userName: currentUser ? currentUser.name : "Anônimo",
+            rating: evalData.rating,
+            text: evalData.text,
+            createdAt: serverTimestamp(),
+            avisoAceito: true
+        });
+
+        showToast("Avaliação enviada com sucesso!", "success");
+        await loadHomeCompanies();
+
+    } catch (error) {
+        console.error("Erro ao enviar avaliação:", error);
+        showToast("Erro ao enviar avaliação", "error");
+    }
+}
+
+// ==================== MAPA ====================
+function initMap() {
+    if (document.getElementById('map')) {
+        map = L.map('map').setView([-15.7801, -47.9292], 4);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        if (companies.length > 0) {
+            addCompaniesToMap(companies);
+        }
+    }
+}
+
+function addCompaniesToMap(companiesArray) {
+    if (!map) return;
+
+    companiesArray.forEach(company => {
+        if (company.lat && company.lng) {
+            L.marker([company.lat, company.lng])
+                .addTo(map)
+                .bindPopup(`
+                    <div style="min-width:200px">
+                        <b>${company.name}</b><br>
+                        <small>${company.location}</small><br>
+                        <div style="color:#FFD700;margin:5px 0;">
+                            ${'★'.repeat(Math.floor(company.averageRating))}
+                            ${'☆'.repeat(5 - Math.floor(company.averageRating))}
+                        </div>
+                        <small>${company.averageRating?.toFixed(1) || 0}/5 (${company.reviewCount || 0} avaliações)</small>
+                    </div>
+                `);
+        }
+    });
+}
+
+// ==================== UTILITÁRIOS ====================
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+
+    const colors = {
+        success: '#10b981',
+        error: '#dc2626',
+        info: '#3b82f6'
+    };
+
+    toast.textContent = message;
+    toast.style.background = colors[type] || colors.info;
+    toast.className = 'toast show';
+
+    setTimeout(() => {
+        toast.className = 'toast';
+    }, 3000);
+}
+
+// ==================== INICIALIZAÇÃO ====================
+async function initApp() {
+    initHeaderScroll();
+    initMap();
+    await loadHomeCompanies();
+}
+
+document.addEventListener("DOMContentLoaded", initApp);
+
+// ==================== EXPORT GLOBAL ====================
+window.submitEvaluation = submitEvaluation;
+window.loadHomeCompanies = loadHomeCompanies;
+window.showToast = showToast;
