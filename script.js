@@ -1,113 +1,152 @@
+/*************************************************
+ * REPUTAÍ - SCRIPT.JS (PRODUÇÃO FINAL REAL)
+ * Firestore como fonte única de dados
+ *************************************************/
+
+import { db } from "./firebase-config.js";
 import {
-  getFirestore,
   collection,
-  getDocs,
   addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
+  getDocs,
   query,
   where,
-  getDoc
+  doc,
+  updateDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { app } from "./firebase-config.js";
+/* ================= UTIL ================= */
 
-const db = getFirestore(app);
-let companiesCache = [];
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+}
 
 /* ================= EMPRESAS ================= */
+
 export async function loadCompanies() {
-  const snap = await getDocs(collection(db, "companies"));
-
-  companiesCache = snap.docs.map(d => ({
-    id: d.id,
-    ...d.data()
+  const snapshot = await getDocs(collection(db, "companies"));
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
   }));
-
-  localStorage.setItem(
-    "reputai_companies_cache",
-    JSON.stringify(companiesCache)
-  );
-
-  renderCompaniesIfNeeded();
-  return companiesCache;
-}
-
-export function getCompaniesForMap() {
-  return companiesCache;
-}
-
-function renderCompaniesIfNeeded() {
-  const grid = document.getElementById("companies-grid");
-  if (!grid) return;
-
-  const noCompanies = document.getElementById("no-companies");
-  grid.innerHTML = "";
-
-  if (companiesCache.length === 0) {
-    if (noCompanies) noCompanies.style.display = "block";
-    return;
-  }
-
-  if (noCompanies) noCompanies.style.display = "none";
-
-  companiesCache.forEach(c => {
-    const card = document.createElement("div");
-    card.className = "company-card";
-    card.innerHTML = `
-      <h3>${c.name}</h3>
-      <p><i class="fas fa-industry"></i> ${c.sector || "—"}</p>
-      <p><i class="fas fa-star"></i> ${c.averageRating?.toFixed(1) || "0.0"} (${c.totalReviews || 0})</p>
-    `;
-    grid.appendChild(card);
-  });
 }
 
 /* ================= AVALIAÇÕES ================= */
-export async function saveEvaluation(data) {
-  const q = query(
-    collection(db, "reviews"),
-    where("companyId", "==", data.companyId),
-    where("userId", "==", data.userId)
-  );
 
-  const existing = await getDocs(q);
-  if (!existing.empty) {
-    alert("Você já avaliou esta empresa.");
+export async function submitEvaluation(event) {
+  event.preventDefault();
+
+  if (!window.ReputaiState.user) {
+    showToast("Você precisa estar logado para avaliar.");
     return;
   }
 
+  const companyName = document.getElementById("company-name").value.trim();
+  const ratingInput = document.querySelector("input[name='rating']:checked");
+  const reviewText = document.getElementById("review-text").value.trim();
+  const anonimo = document.getElementById("anonimo").checked;
+
+  if (!companyName || !ratingInput || reviewText.length < 50) {
+    showToast("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  const rating = Number(ratingInput.value);
+
   await addDoc(collection(db, "reviews"), {
-    ...data,
-    createdAt: serverTimestamp(),
-    status: "approved"
+    companyName,
+    rating,
+    text: reviewText,
+    anonymous: anonimo,
+    userId: window.ReputaiState.user.uid,
+    createdAt: serverTimestamp()
   });
 
-  const companyRef = doc(db, "companies", data.companyId);
-  const snap = await getDoc(companyRef);
+  await updateCompanyStats(companyName, rating);
 
-  const total = snap.data().totalReviews || 0;
-  const avg = snap.data().averageRating || 0;
-
-  const newTotal = total + 1;
-  const newAvg = (avg * total + data.rating) / newTotal;
-
-  await updateDoc(companyRef, {
-    totalReviews: newTotal,
-    averageRating: Number(newAvg.toFixed(2))
-  });
-
-  alert("Avaliação enviada com sucesso!");
+  showToast("Avaliação enviada com sucesso!");
+  event.target.reset();
 }
 
-/* ================= BOOT ================= */
-document.addEventListener("DOMContentLoaded", async () => {
-  const cached = localStorage.getItem("reputai_companies_cache");
-  if (cached) {
-    companiesCache = JSON.parse(cached);
-    renderCompaniesIfNeeded();
+/* ================= ESTATÍSTICAS ================= */
+
+async function updateCompanyStats(companyName, rating) {
+  const q = query(
+    collection(db, "companies"),
+    where("name", "==", companyName)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    await addDoc(collection(db, "companies"), {
+      name: companyName,
+      sector: "Outros",
+      averageRating: rating,
+      reviewCount: 1
+    });
+    return;
   }
-  await loadCompanies();
+
+  const companyDoc = snap.docs[0];
+  const data = companyDoc.data();
+
+  const total = data.averageRating * data.reviewCount + rating;
+  const newCount = data.reviewCount + 1;
+  const newAverage = total / newCount;
+
+  await updateDoc(doc(db, "companies", companyDoc.id), {
+    reviewCount: newCount,
+    averageRating: newAverage
+  });
+}
+
+/* ================= PERFIL ================= */
+
+export async function loadUserReviews() {
+  if (!window.ReputaiState.user) return [];
+
+  const q = query(
+    collection(db, "reviews"),
+    where("userId", "==", window.ReputaiState.user.uid)
+  );
+
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => doc.data());
+}
+
+/* ================= MOBILE SCROLL ================= */
+
+let lastScrollTop = 0;
+
+window.addEventListener("scroll", () => {
+  const header = document.getElementById("main-header");
+  if (!header) return;
+
+  const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+  if (currentScroll > lastScrollTop && currentScroll > 50) {
+    header.classList.add("hide");
+  } else {
+    header.classList.remove("hide");
+  }
+
+  lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
 });
+
+/* ================= EXPORT GLOBAL ================= */
+
+window.Reputai = {
+  loadCompanies,
+  submitEvaluation,
+  loadUserReviews
+};
