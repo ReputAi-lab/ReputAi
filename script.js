@@ -1,967 +1,559 @@
-// script.js - Configuração principal ATUALIZADA
+/*************************************************
+ * REPUTAÍ - SCRIPT.JS (VERSÃO COMPLETA ATUALIZADA)
+ * Funcionalidades: usuário, admin, testes
+ *************************************************/
+
+import { auth, db, onAuthStateChanged } from "./firebase-config.js";
+import {
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    GoogleAuthProvider,
+    signInWithPopup,
+    FacebookAuthProvider,
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    query,
+    where,
+    orderBy,
+    serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+console.log("📦 [script] Inicializando ReputAí...");
+
 let currentUser = null;
-let userLocation = null;
-let locationPermission = false;
-let typingInterval = null;
-let map = null;
-let companies = [];
-let evaluationData = null;
 
-// ==================== HEADER SCROLL ====================
-function initHeaderScroll() {
-    window.addEventListener('scroll', function() {
-        const header = document.querySelector('header');
-        if (window.scrollY > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-    });
-}
-
-// ==================== ANIMAÇÃO DE DIGITAÇÃO ====================
-function initTypingEffect() {
-    const typingElement = document.querySelector('.typing-text');
-    if (!typingElement) return;
-    
-    const phrases = [
-        "o melhor lugar",
-        "a equipe ideal", 
-        "a melhor empresa"
-    ];
-    
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let speed = 100;
-    
-    function type() {
-        const currentPhrase = phrases[phraseIndex];
-        
-        if (isDeleting) {
-            typingElement.textContent = currentPhrase.substring(0, charIndex - 1);
-            charIndex--;
-            speed = 50;
-            
-            if (charIndex === 0) {
-                isDeleting = false;
-                phraseIndex = (phraseIndex + 1) % phrases.length;
-                setTimeout(type, 500);
-                return;
-            }
-        } else {
-            typingElement.textContent = currentPhrase.substring(0, charIndex + 1);
-            charIndex++;
-            speed = 100;
-            
-            if (charIndex === currentPhrase.length) {
-                isDeleting = true;
-                setTimeout(type, 2000);
-                return;
-            }
-        }
-        
-        typingInterval = setTimeout(type, speed);
-    }
-    
-    if (typingInterval) {
-        clearTimeout(typingInterval);
-    }
-    
-    typingInterval = setTimeout(type, 1000);
-}
-
-// ==================== MAPA ====================
-function initMap() {
-    if (document.getElementById('map')) {
-        map = L.map('map').setView([-15.7801, -47.9292], 4);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
-        
-        if (companies.length > 0) {
-            addCompaniesToMap(companies);
-        }
-    }
-}
-
-function addCompaniesToMap(companiesArray) {
-    if (!map) return;
-    
-    // Limpar marcadores existentes
-    map.eachLayer(layer => {
-        if (layer instanceof L.Marker) {
-            map.removeLayer(layer);
-        }
-    });
-    
-    companiesArray.forEach(company => {
-        if (company.lat && company.lng) {
-            L.marker([company.lat, company.lng])
-                .addTo(map)
-                .bindPopup(`
-                    <div style="min-width: 200px;">
-                        <b>${company.name}</b><br>
-                        <small>${company.location}</small><br>
-                        <div style="color: #FFD700; margin: 5px 0;">
-                            ${'★'.repeat(Math.floor(company.averageRating))}
-                            ${'☆'.repeat(5 - Math.floor(company.averageRating))}
-                        </div>
-                        <small>${company.averageRating.toFixed(1)}/5 (${company.reviewCount} avaliações)</small>
-                        <br>
-                        <button onclick="showCompanyDetailsFromMap(${company.id})" style="margin-top: 10px; background: #2563eb; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                            Ver Detalhes
-                        </button>
-                    </div>
-                `);
-        }
-    });
-}
-
-function showCompanyDetailsFromMap(companyId) {
-    showCompanyDetails(companyId);
-}
-
-function locateUser() {
-    if (!navigator.geolocation) {
-        showToast('Geolocalização não suportada', 'error');
-        return;
-    }
-    
-    if (!locationPermission) {
-        requestLocationPermission();
-        return;
-    }
-    
-    showToast('Obtendo localização...', 'info');
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            userLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
-            
-            if (map) {
-                map.setView([userLocation.lat, userLocation.lng], 14);
-                
-                L.marker([userLocation.lat, userLocation.lng], {
-                    icon: L.divIcon({
-                        className: 'user-location-marker',
-                        html: '<div style="background: #2563eb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);"></div>'
-                    })
-                }).addTo(map).bindPopup('Você está aqui!');
-            }
-            
-            updateLocationStatus('Localização ativa', true);
-            showToast('Localização encontrada!', 'success');
-            
-            if (typeof getUserLocationName === 'function') {
-                getUserLocationName(userLocation.lat, userLocation.lng);
-            }
-        },
-        (error) => {
-            console.error('Erro na geolocalização:', error);
-            showToast('Erro ao obter localização', 'error');
-            updateLocationStatus('Clique para ativar', false);
-        }
-    );
-}
-
-function resetMapView() {
-    if (map) {
-        map.setView([-15.7801, -47.9292], 4);
-        showToast('Mapa redefinido', 'info');
-    }
-}
-
-// ==================== EMPRESAS ====================
-function loadCompanies() {
-    const savedCompanies = localStorage.getItem('reputai_companies');
-    
-    if (savedCompanies) {
-        companies = JSON.parse(savedCompanies);
+// ================== AUTH STATE ==================
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        console.log("✅ Usuário autenticado:", user.email);
+        updateHeaderUser(user);
+        await checkAdminRole(user.uid);
     } else {
-        companies = [
-            {
-                id: 1,
-                name: "Magazine Luiza",
-                sector: "Varejo",
-                location: "São Paulo, SP",
-                lat: -23.5505,
-                lng: -46.6333,
-                description: "Rede varejista brasileira",
-                averageRating: 4.2,
-                reviewCount: 1245
-            },
-            {
-                id: 2,
-                name: "Itaú Unibanco",
-                sector: "Finanças",
-                location: "São Paulo, SP",
-                lat: -23.5500,
-                lng: -46.6390,
-                description: "Maior banco privado do Brasil",
-                averageRating: 3.9,
-                reviewCount: 2341
-            },
-            {
-                id: 3,
-                name: "Nubank",
-                sector: "Finanças",
-                location: "São Paulo, SP",
-                lat: -23.5489,
-                lng: -46.6388,
-                description: "Fintech brasileira",
-                averageRating: 4.5,
-                reviewCount: 1890
-            },
-            {
-                id: 4,
-                name: "Petrobras",
-                sector: "Energia",
-                location: "Rio de Janeiro, RJ",
-                lat: -22.9068,
-                lng: -43.1729,
-                description: "Empresa estatal de petróleo",
-                averageRating: 3.2,
-                reviewCount: 3120
-            }
-        ];
-        
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
+        currentUser = null;
+        console.log("🔓 Usuário deslogado");
+        resetHeaderUser();
     }
-    
-    window.companies = companies;
-    return companies;
+});
+
+// ================== LOGIN / REGISTER ==================
+export async function login() {
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value.trim();
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        showToast("Login realizado com sucesso!", "success");
+        hideAuthModal();
+    } catch (error) {
+        console.error("Erro login:", error);
+        showToast(error.message, "error");
+    }
 }
 
-// Função para carregar apenas algumas empresas na home
-function loadHomeCompanies() {
-    const allCompanies = loadCompanies();
-    // Mostrar apenas as primeiras 4 empresas na home
-    const homeCompanies = allCompanies.slice(0, 4);
-    displayCompanies(homeCompanies);
-}
+export async function register() {
+    const name = document.getElementById("register-name").value.trim();
+    const email = document.getElementById("register-email").value.trim();
+    const password = document.getElementById("register-password").value.trim();
+    const cpf = document.getElementById("register-cpf").value.trim();
 
-function displayCompanies(companiesToShow) {
-    const container = document.getElementById('companies-container');
-    const noCompanies = document.getElementById('no-companies');
-    
-    if (!container) return;
-    
-    if (!companiesToShow || companiesToShow.length === 0) {
-        container.innerHTML = '';
-        if (noCompanies) noCompanies.style.display = 'block';
+    if (!name || !email || !password) {
+        showToast("Preencha todos os campos obrigatórios!", "error");
         return;
     }
-    
-    if (noCompanies) noCompanies.style.display = 'none';
-    
-    container.innerHTML = companiesToShow.map(company => `
-        <div class="company-card" onclick="showCompanyDetails(${company.id})">
-            <div class="company-header">
-                <div class="company-logo">${company.name.substring(0, 2)}</div>
-                <div class="company-info">
-                    <h4>${company.name}</h4>
-                    <p><i class="fas fa-map-marker-alt"></i> ${company.location}</p>
-                </div>
-            </div>
-            
-            <div class="company-body">
-                <div class="company-rating">
-                    <div class="stars">
-                        ${'★'.repeat(Math.floor(company.averageRating))}
-                        ${'☆'.repeat(5 - Math.floor(company.averageRating))}
-                    </div>
-                    <span>${company.averageRating.toFixed(1)}/5 (${company.reviewCount})</span>
-                </div>
-                
-                <p>${company.description || 'Empresa cadastrada na plataforma ReputAí'}</p>
-                
-                <div class="company-tags">
-                    <span class="tag">${company.sector}</span>
-                    <span class="tag">${company.reviewCount} avaliações</span>
-                </div>
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+
+        // Criar documento de usuário
+        await addDoc(collection(db, "usuarios"), {
+            uid: uid,
+            name: name,
+            email: email,
+            cpf: cpf || "",
+            role: "user",
+            createdAt: serverTimestamp(),
+        });
+
+        showToast("Cadastro realizado com sucesso!", "success");
+        hideAuthModal();
+    } catch (error) {
+        console.error("Erro registro:", error);
+        showToast(error.message, "error");
+    }
+}
+
+// ================== LOGOUT ==================
+export async function logout() {
+    try {
+        await signOut(auth);
+        showToast("Logout realizado com sucesso!", "success");
+    } catch (error) {
+        console.error("Erro logout:", error);
+        showToast(error.message, "error");
+    }
+}
+
+// ================== LOGIN SOCIAL ==================
+export async function handleGoogleLogin() {
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        hideAuthModal();
+        showToast("Login com Google realizado!", "success");
+    } catch (error) {
+        console.error("Erro Google login:", error);
+        showToast(error.message, "error");
+    }
+}
+
+export async function handleFacebookLogin() {
+    const provider = new FacebookAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        hideAuthModal();
+        showToast("Login com Facebook realizado!", "success");
+    } catch (error) {
+        console.error("Erro Facebook login:", error);
+        showToast(error.message, "error");
+    }
+}
+
+// ================== HEADER ==================
+function updateHeaderUser(user) {
+    document.getElementById("login-btn").style.display = "none";
+    const avatar = document.getElementById("user-avatar");
+    avatar.style.display = "block";
+    avatar.textContent = user.email.charAt(0).toUpperCase();
+    document.getElementById("user-menu").style.display = "block";
+}
+
+function resetHeaderUser() {
+    document.getElementById("login-btn").style.display = "block";
+    document.getElementById("user-avatar").style.display = "none";
+    document.getElementById("user-menu").style.display = "none";
+    document.getElementById("admin-link").style.display = "none";
+}
+
+// ================== CHECK ADMIN ==================
+async function checkAdminRole(uid) {
+    try {
+        const q = query(collection(db, "usuarios"), where("uid", "==", uid));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.role === "admin") {
+                document.getElementById("admin-link").style.display = "block";
+                console.log("👑 Admin detectado");
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao verificar role admin:", error);
+    }
+}
+
+// ================== SEARCH / FILTER ==================
+export async function searchCompanies() {
+    const queryText = document.getElementById("search-company").value.trim();
+    const companiesList = document.getElementById("companies-list");
+    companiesList.innerHTML = "";
+
+    try {
+        const q = query(collection(db, "empresas"));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => {
+            const company = doc.data();
+            if (
+                company.name.toLowerCase().includes(queryText.toLowerCase()) ||
+                company.sector.toLowerCase().includes(queryText.toLowerCase()) ||
+                company.location.toLowerCase().includes(queryText.toLowerCase())
+            ) {
+                renderCompanyCard(doc.id, company);
+            }
+        });
+    } catch (error) {
+        console.error("Erro ao buscar empresas:", error);
+    }
+}
+
+export async function filterBySector(sector) {
+    const companiesList = document.getElementById("companies-list");
+    companiesList.innerHTML = "";
+
+    try {
+        const q = query(collection(db, "empresas"), where("sector", "==", sector));
+        const snapshot = await getDocs(q);
+        snapshot.forEach((doc) => renderCompanyCard(doc.id, doc.data()));
+    } catch (error) {
+        console.error("Erro ao filtrar setor:", error);
+    }
+}
+
+// ================== RENDER COMPANY CARD ==================
+function renderCompanyCard(id, data) {
+    const companiesList = document.getElementById("companies-list");
+    const card = document.createElement("div");
+    card.className = "company-card";
+    card.innerHTML = `
+        <div class="company-card-header">
+            <h3>${data.name}</h3>
+            <span class="sector">${data.sector}</span>
+        </div>
+        <div class="company-card-body">
+            <p>${data.description || "Sem descrição disponível."}</p>
+            <div class="company-rating">
+                <i class="fas fa-star"></i> ${data.rating ? data.rating.toFixed(1) : "0.0"} / 5
             </div>
         </div>
-    `).join('');
+    `;
+    companiesList.appendChild(card);
+}
+/*************************************************
+ * REPUTAÍ - SCRIPT.JS (PARTE 2)
+ * Admin Dashboard, denúncias e estatísticas
+ *************************************************/
+
+// ================== ADMIN DASHBOARD ==================
+export async function loadAdminDashboard() {
+    if (!currentUser) return;
+
+    const adminPanel = document.getElementById("admin-panel");
+    if (!adminPanel) return;
+
+    adminPanel.innerHTML = "<p>Carregando informações do admin...</p>";
+
+    try {
+        // ================== ESTATÍSTICAS ==================
+        const usuariosSnap = await getDocs(collection(db, "usuarios"));
+        const empresasSnap = await getDocs(collection(db, "empresas"));
+        const avaliacoesSnap = await getDocs(collection(db, "avaliacoes"));
+
+        const totalUsuarios = usuariosSnap.size;
+        const totalEmpresas = empresasSnap.size;
+        const totalAvaliacoes = avaliacoesSnap.size;
+
+        // Exibir estatísticas
+        adminPanel.innerHTML = `
+            <h2>👑 Painel Admin</h2>
+            <div class="admin-stats">
+                <div>Total de Usuários: ${totalUsuarios}</div>
+                <div>Total de Empresas: ${totalEmpresas}</div>
+                <div>Total de Avaliações: ${totalAvaliacoes}</div>
+            </div>
+            <h3>Denúncias Pendentes</h3>
+            <div id="denuncias-list">Carregando denúncias...</div>
+        `;
+
+        await loadDenuncias();
+    } catch (error) {
+        console.error("Erro ao carregar painel admin:", error);
+        adminPanel.innerHTML = "<p>Erro ao carregar painel. Veja o console.</p>";
+    }
 }
 
-function searchCompanies() {
-    const searchTerm = document.getElementById('search-company').value.toLowerCase().trim();
-    
-    if (!searchTerm) {
-        loadHomeCompanies();
-        if (map) addCompaniesToMap(companies.slice(0, 4));
-        return;
-    }
-    
-    const filtered = companies.filter(company =>
-        company.name.toLowerCase().includes(searchTerm) ||
-        company.sector.toLowerCase().includes(searchTerm) ||
-        company.location.toLowerCase().includes(searchTerm) ||
-        (company.description && company.description.toLowerCase().includes(searchTerm))
-    );
-    
-    displayCompanies(filtered);
-    
-    if (map) {
-        addCompaniesToMap(filtered);
-        if (filtered.length > 0) {
-            const bounds = L.latLngBounds(filtered.map(c => [c.lat, c.lng]));
-            map.fitBounds(bounds);
+// ================== DENÚNCIAS ==================
+async function loadDenuncias() {
+    const denunciasList = document.getElementById("denuncias-list");
+    denunciasList.innerHTML = "";
+
+    try {
+        const q = query(collection(db, "denuncias"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            denunciasList.innerHTML = "<p>Não há denúncias pendentes.</p>";
+            return;
         }
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.className = "denuncia-card";
+            div.innerHTML = `
+                <p><strong>Usuário:</strong> ${data.userName || "Anônimo"}</p>
+                <p><strong>Avaliação ID:</strong> ${data.avaliacaoId}</p>
+                <p><strong>Motivo:</strong> ${data.reason}</p>
+                <div class="denuncia-actions">
+                    <button onclick="approveDenuncia('${doc.id}')">Aprovar</button>
+                    <button onclick="rejectDenuncia('${doc.id}')">Rejeitar</button>
+                </div>
+            `;
+            denunciasList.appendChild(div);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar denúncias:", error);
+        denunciasList.innerHTML = "<p>Erro ao carregar denúncias.</p>";
     }
 }
 
-function filterBySector(sector) {
-    const filtered = companies.filter(company => company.sector === sector);
-    displayCompanies(filtered);
-    
-    if (map) {
-        addCompaniesToMap(filtered);
-        if (filtered.length > 0) {
-            const bounds = L.latLngBounds(filtered.map(c => [c.lat, c.lng]));
-            map.fitBounds(bounds);
+export async function approveDenuncia(denunciaId) {
+    try {
+        const denunciaRef = doc(db, "denuncias", denunciaId);
+        const denunciaSnap = await getDoc(denunciaRef);
+        if (!denunciaSnap.exists()) return;
+
+        const data = denunciaSnap.data();
+        const avaliacaoRef = doc(db, "avaliacoes", data.avaliacaoId);
+
+        // Remove a avaliação denunciada
+        await deleteDoc(avaliacaoRef);
+
+        // Remove a denúncia
+        await deleteDoc(denunciaRef);
+
+        showToast("Avaliação removida e denúncia aprovada!", "success");
+        loadDenuncias();
+    } catch (error) {
+        console.error("Erro aprovar denúncia:", error);
+        showToast("Erro ao aprovar denúncia", "error");
+    }
+}
+
+export async function rejectDenuncia(denunciaId) {
+    try {
+        await deleteDoc(doc(db, "denuncias", denunciaId));
+        showToast("Denúncia rejeitada com sucesso!", "success");
+        loadDenuncias();
+    } catch (error) {
+        console.error("Erro rejeitar denúncia:", error);
+        showToast("Erro ao rejeitar denúncia", "error");
+    }
+}
+
+// ================== TEST FUNCTIONS ==================
+export async function populateTestData() {
+    try {
+        // Criar empresas teste
+        const empresasRef = collection(db, "empresas");
+        await addDoc(empresasRef, {
+            name: "Empresa Teste 1",
+            sector: "Tecnologia",
+            location: "São Paulo",
+            rating: 4.5,
+            description: "Empresa fictícia para teste",
+            createdAt: serverTimestamp(),
+        });
+
+        await addDoc(empresasRef, {
+            name: "Empresa Teste 2",
+            sector: "Finanças",
+            location: "Rio de Janeiro",
+            rating: 3.8,
+            description: "Empresa fictícia para teste",
+            createdAt: serverTimestamp(),
+        });
+
+        // Criar avaliações teste
+        const avaliacoesRef = collection(db, "avaliacoes");
+        await addDoc(avaliacoesRef, {
+            userId: currentUser.uid,
+            companyId: "empresaTeste1",
+            rating: 5,
+            comment: "Ótima experiência!",
+            createdAt: serverTimestamp(),
+        });
+
+        showToast("Dados de teste populados com sucesso!", "success");
+    } catch (error) {
+        console.error("Erro criar dados teste:", error);
+        showToast("Erro ao criar dados de teste", "error");
+    }
+}
+/*************************************************
+ * REPUTAÍ - SCRIPT.JS (PARTE 3)
+ * Perfil, Avaliações e Funções Auxiliares
+ *************************************************/
+
+// ================== PERFIL DO USUÁRIO ==================
+export async function loadUserProfile() {
+    if (!currentUser) return;
+
+    const profileContainer = document.getElementById("profile-container");
+    if (!profileContainer) return;
+
+    try {
+        const userRef = doc(db, "usuarios", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+            profileContainer.innerHTML = "<p>Erro ao carregar perfil.</p>";
+            return;
         }
+
+        const userData = userSnap.data();
+        profileContainer.innerHTML = `
+            <h2>Meu Perfil</h2>
+            <p><strong>Nome:</strong> ${userData.name}</p>
+            <p><strong>Email:</strong> ${currentUser.email}</p>
+            <p><strong>CPF:</strong> ${userData.cpf || "Não informado"}</p>
+            <p><strong>Função:</strong> ${userData.role}</p>
+            <button onclick="editUserProfile()">Editar Perfil</button>
+        `;
+
+        loadUserAvaliacoes();
+    } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+        profileContainer.innerHTML = "<p>Erro ao carregar perfil.</p>";
     }
-    
-    showToast(`Filtrado por: ${sector}`, 'info');
 }
 
-// ==================== SISTEMA DE AVALIAÇÃO COM AVISO ====================
-function verificarAvaliacao() {
-    const companyName = document.getElementById('evaluate-company').value.trim();
-    const rating = document.querySelector('input[name="rating"]:checked');
-    const text = document.getElementById('evaluation-text').value.trim();
-    const sector = document.getElementById('evaluate-sector').value;
-    const location = document.getElementById('evaluate-location').value.trim();
-    
+async function loadUserAvaliacoes() {
+    const avaliacoesContainer = document.getElementById("user-avaliacoes");
+    if (!avaliacoesContainer) return;
+
+    avaliacoesContainer.innerHTML = "<p>Carregando suas avaliações...</p>";
+
+    try {
+        const q = query(collection(db, "avaliacoes"), where("userId", "==", currentUser.uid));
+        const snapshot = await getDocs(q);
+
+        avaliacoesContainer.innerHTML = "";
+        if (snapshot.empty) {
+            avaliacoesContainer.innerHTML = "<p>Você ainda não fez avaliações.</p>";
+            return;
+        }
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const div = document.createElement("div");
+            div.className = "avaliacao-card";
+            div.innerHTML = `
+                <p><strong>Empresa:</strong> ${data.companyName || "Desconhecida"}</p>
+                <p><strong>Avaliação:</strong> ${data.rating} estrelas</p>
+                <p>${data.comment}</p>
+                <button onclick="editAvaliacao('${docSnap.id}')">Editar</button>
+                <button onclick="deleteAvaliacao('${docSnap.id}')">Excluir</button>
+            `;
+            avaliacoesContainer.appendChild(div);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar avaliações do usuário:", error);
+        avaliacoesContainer.innerHTML = "<p>Erro ao carregar avaliações.</p>";
+    }
+}
+
+export async function editUserProfile() {
+    showToast("Funcionalidade de edição em desenvolvimento...", "info");
+}
+
+// ================== SUBMISSÃO DE AVALIAÇÕES ==================
+export async function submitAvaliacao(companyId, rating, comment) {
     if (!currentUser) {
-        showToast('Faça login para avaliar', 'info');
-        if (typeof showAuthModal === 'function') showAuthModal();
+        showToast("Você precisa estar logado para avaliar!", "error");
         return;
     }
-    
-    if (!companyName || !rating || !text) {
-        showToast('Preencha todos os campos obrigatórios', 'error');
-        return;
-    }
-    
-    if (text.length < 50) {
-        showToast('A avaliação deve ter pelo menos 50 caracteres', 'error');
-        return;
-    }
-    
-    evaluationData = {
-        companyName,
-        rating: parseInt(rating.value),
-        text,
-        sector: sector || "Outros",
-        location: location || "Brasil"
-    };
-    
-    showAvisoModal();
-}
 
-function showAvisoModal() {
-    const modal = document.getElementById('aviso-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
-        
-        document.getElementById('concordar-avisos').checked = false;
-        document.getElementById('prosseguir-avaliacao').disabled = true;
-        
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) hideAvisoModal();
+    try {
+        const avaliacoesRef = collection(db, "avaliacoes");
+        await addDoc(avaliacoesRef, {
+            userId: currentUser.uid,
+            companyId,
+            rating,
+            comment,
+            createdAt: serverTimestamp(),
         });
-        
-        document.addEventListener('keydown', function escHandler(e) {
-            if (e.key === 'Escape') {
-                hideAvisoModal();
-                document.removeEventListener('keydown', escHandler);
-            }
-        });
+
+        // Atualizar média da empresa
+        await updateCompanyRating(companyId);
+
+        showToast("Avaliação enviada com sucesso!", "success");
+        loadUserAvaliacoes();
+        loadCompanies(); // Atualizar listagem
+    } catch (error) {
+        console.error("Erro ao enviar avaliação:", error);
+        showToast("Erro ao enviar avaliação", "error");
     }
 }
 
-function hideAvisoModal() {
-    const modal = document.getElementById('aviso-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
-    }
+async function updateCompanyRating(companyId) {
+    const avaliacoesRef = collection(db, "avaliacoes");
+    const q = query(avaliacoesRef, where("companyId", "==", companyId));
+    const snapshot = await getDocs(q);
+
+    let total = 0;
+    let count = 0;
+    snapshot.forEach((docSnap) => {
+        total += docSnap.data().rating;
+        count++;
+    });
+
+    const avg = count > 0 ? total / count : 0;
+    const companyRef = doc(db, "empresas", companyId);
+    await updateDoc(companyRef, { rating: avg });
 }
 
-function prosseguirAvaliacao() {
-    if (!evaluationData) {
-        showToast('Erro: Dados da avaliação não encontrados', 'error');
+// ================== FUNÇÕES AUXILIARES ==================
+export function toggleUserMenu() {
+    const menu = document.getElementById("user-menu");
+    if (!menu) return;
+
+    menu.style.display = menu.style.display === "flex" ? "none" : "flex";
+}
+
+// Pesquisa de empresas
+export async function searchCompanies() {
+    const input = document.getElementById("search-company").value.toLowerCase();
+    if (!input) return loadCompanies();
+
+    const companiesRef = collection(db, "empresas");
+    const snapshot = await getDocs(companiesRef);
+    const results = snapshot.docs.filter(docSnap => {
+        const data = docSnap.data();
+        return data.name.toLowerCase().includes(input) ||
+               (data.sector && data.sector.toLowerCase().includes(input)) ||
+               (data.location && data.location.toLowerCase().includes(input));
+    });
+
+    displayCompanies(results);
+}
+
+// Filtrar por setor
+export async function filterBySector(sector) {
+    const companiesRef = collection(db, "empresas");
+    const q = query(companiesRef, where("sector", "==", sector));
+    const snapshot = await getDocs(q);
+
+    displayCompanies(snapshot.docs);
+}
+
+// Renderização de empresas
+function displayCompanies(docsArray) {
+    const container = document.getElementById("companies-list");
+    container.innerHTML = "";
+
+    if (!docsArray || docsArray.length === 0) {
+        container.innerHTML = "<p>Nenhuma empresa encontrada.</p>";
         return;
     }
-    
-    hideAvisoModal();
-    submitEvaluation(evaluationData);
-}
 
-function submitEvaluation(evalData) {
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const existingCompany = companies.find(c => 
-        c.name.toLowerCase() === evalData.companyName.toLowerCase()
-    );
-    
-    let companyId;
-    if (existingCompany) {
-        companyId = existingCompany.id;
-    } else {
-        companyId = companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1;
-        const newCompany = {
-            id: companyId,
-            name: evalData.companyName,
-            sector: evalData.sector,
-            location: evalData.location,
-            lat: -15 + (Math.random() - 0.5) * 20,
-            lng: -50 + (Math.random() - 0.5) * 20,
-            description: `Empresa cadastrada através de avaliação - Setor: ${evalData.sector}`,
-            averageRating: evalData.rating,
-            reviewCount: 1,
-            cadastradaPor: currentUser.id,
-            dataCadastro: new Date().toISOString()
-        };
-        companies.push(newCompany);
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
-        
-        showToast(`Empresa "${evalData.companyName}" cadastrada automaticamente!`, 'success');
-    }
-    
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const newEvaluation = {
-        id: evaluations.length > 0 ? Math.max(...evaluations.map(e => e.id)) + 1 : 1,
-        companyId: companyId,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        rating: evalData.rating,
-        text: evalData.text,
-        date: new Date().toISOString(),
-        avisoAceito: true,
-        termosAceitosEm: new Date().toISOString()
-    };
-    
-    evaluations.push(newEvaluation);
-    localStorage.setItem('reputai_evaluations', JSON.stringify(evaluations));
-    
-    const companyIndex = companies.findIndex(c => c.id === companyId);
-    if (companyIndex !== -1) {
-        const companyEvals = evaluations.filter(e => e.companyId === companyId);
-        const totalRating = companyEvals.reduce((sum, eval) => sum + eval.rating, 0);
-        companies[companyIndex].averageRating = totalRating / companyEvals.length;
-        companies[companyIndex].reviewCount = companyEvals.length;
-        
-        localStorage.setItem('reputai_companies', JSON.stringify(companies));
-    }
-    
-    showToast('Avaliação enviada com sucesso!', 'success');
-    
-    // Limpar formulário apenas se estiver na home
-    const evaluateCompanyInput = document.getElementById('evaluate-company');
-    const evaluationTextInput = document.getElementById('evaluation-text');
-    
-    if (evaluateCompanyInput) evaluateCompanyInput.value = '';
-    if (evaluationTextInput) evaluationTextInput.value = '';
-    
-    // Limpar outros campos se existirem
-    const evaluateSector = document.getElementById('evaluate-sector');
-    const evaluateLocation = document.getElementById('evaluate-location');
-    if (evaluateSector) evaluateSector.value = '';
-    if (evaluateLocation) evaluateLocation.value = '';
-    
-    // Limpar estrelas
-    document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
-    
-    evaluationData = null;
-    
-    // Atualizar display na home
-    if (typeof loadHomeCompanies === 'function') {
-        loadHomeCompanies();
-    }
-    
-    if (map) {
-        const updatedCompanies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-        addCompaniesToMap(updatedCompanies.slice(0, 4));
-        
-        const newCompany = updatedCompanies.find(c => c.id === companyId);
-        if (newCompany && newCompany.lat && newCompany.lng) {
-            map.setView([newCompany.lat, newCompany.lng], 12);
-        }
-    }
-}
-
-// ==================== FUNÇÕES PARA EXIBIR DETALHES ADICIONAIS ====================
-function formatAmbientStats(ambientStats) {
-    if (!ambientStats || Object.keys(ambientStats).length === 0) {
-        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre ambiente</p>';
-    }
-    
-    const total = Object.values(ambientStats).reduce((sum, count) => sum + count, 0);
-    const items = Object.entries(ambientStats).map(([ambient, count]) => {
-        const percentage = ((count / total) * 100).toFixed(0);
-        const icons = {
-            'ótimo': 'fas fa-laugh-beam',
-            'bom': 'fas fa-smile',
-            'normal': 'fas fa-meh',
-            'ruim': 'fas fa-frown'
-        };
-        
-        return `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <i class="${icons[ambient] || 'fas fa-question'}" style="color: ${getAmbientColor(ambient)};"></i>
-                <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>${ambient.charAt(0).toUpperCase() + ambient.slice(1)}</span>
-                        <span>${percentage}%</span>
-                    </div>
-                    <div style="height: 6px; background: var(--gray-light); border-radius: 3px; overflow: hidden; margin-top: 4px;">
-                        <div style="height: 100%; width: ${percentage}%; background: ${getAmbientColor(ambient)};"></div>
-                    </div>
-                </div>
-            </div>
+    docsArray.forEach((docSnap) => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "company-card";
+        div.innerHTML = `
+            <h3>${data.name}</h3>
+            <p><strong>Setor:</strong> ${data.sector}</p>
+            <p><strong>Localização:</strong> ${data.location}</p>
+            <p><strong>Avaliação:</strong> ${data.rating || 0} estrelas</p>
         `;
-    }).join('');
-    
-    return `
-        <div style="background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 15px;">
-            <h5 style="margin-top: 0; margin-bottom: 10px; color: var(--dark);">Ambiente de Trabalho</h5>
-            ${items}
-            <p style="font-size: 0.8rem; color: var(--gray); margin-top: 10px; margin-bottom: 0;">
-                Baseado em ${total} avaliação${total !== 1 ? 'es' : ''}
-            </p>
-        </div>
-    `;
-}
-
-function getAmbientColor(ambient) {
-    const colors = {
-        'ótimo': '#10b981',
-        'bom': '#3b82f6',
-        'normal': '#f59e0b',
-        'ruim': '#dc2626'
-    };
-    return colors[ambient] || '#64748b';
-}
-
-function formatBenefits(benefitsList) {
-    if (!benefitsList || benefitsList.length === 0) {
-        return '<p style="color: var(--gray); font-size: 0.9rem;">Sem informações sobre benefícios</p>';
-    }
-    
-    return `
-        <div style="margin-bottom: 15px;">
-            <h5 style="margin-bottom: 8px; color: var(--dark);">Benefícios Oferecidos</h5>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${benefitsList.map(benefit => `
-                    <span style="background: #dbeafe; color: #1d4ed8; padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-check-circle" style="font-size: 0.8rem;"></i>
-                        ${benefit}
-                    </span>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function showCompanyDetails(companyId) {
-    const companies = JSON.parse(localStorage.getItem('reputai_companies') || '[]');
-    const evaluations = JSON.parse(localStorage.getItem('reputai_evaluations') || '[]');
-    const company = companies.find(c => c.id === companyId);
-    
-    if (!company) return;
-    
-    const companyEvaluations = evaluations.filter(e => e.companyId === companyId);
-    
-    const modalContent = `
-        <div style="max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--gray-light);">
-                <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px;">
-                    ${company.name.substring(0, 2)}
-                </div>
-                <div>
-                    <h3 style="margin: 0; color: var(--dark);">${company.name}</h3>
-                    <p style="margin: 5px 0; color: var(--gray);">
-                        <i class="fas fa-map-marker-alt"></i> ${company.location}
-                    </p>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="color: #FFD700; font-size: 20px;">
-                            ${'★'.repeat(Math.floor(company.averageRating))}
-                            ${'☆'.repeat(5 - Math.floor(company.averageRating))}
-                        </div>
-                        <span style="font-weight: bold; color: var(--dark);">${company.averageRating.toFixed(1)}/5</span>
-                        <span style="color: var(--gray);">(${company.reviewCount} avaliações)</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: var(--dark); margin-bottom: 10px;">Descrição</h4>
-                <p style="color: var(--text);">${company.description || 'Empresa cadastrada na plataforma ReputAí'}</p>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <span style="background: var(--gray-light); padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">
-                        ${company.sector}
-                    </span>
-                    <span style="background: var(--gray-light); padding: 5px 10px; border-radius: 20px; font-size: 0.85rem;">
-                        ${company.reviewCount} avaliações
-                    </span>
-                </div>
-            </div>
-            
-            <!-- Nova seção: Estatísticas de Ambiente -->
-            ${company.ambientStats ? formatAmbientStats(company.ambientStats) : ''}
-            
-            <!-- Nova seção: Benefícios -->
-            ${company.benefitsList ? formatBenefits(company.benefitsList) : ''}
-            
-            <div style="margin-top: 20px;">
-                <h4 style="color: var(--dark); margin-bottom: 15px;">
-                    Avaliações (${companyEvaluations.length})
-                </h4>
-                ${companyEvaluations.length > 0 ? 
-                    `<div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
-                        ${companyEvaluations.map(eval => `
-                            <div style="background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <strong style="color: var(--dark);">${eval.userName}</strong>
-                                    <div style="color: #FFD700;">
-                                        ${'★'.repeat(eval.rating)}${'☆'.repeat(5 - eval.rating)}
-                                    </div>
-                                </div>
-                                <p style="color: var(--text); margin-bottom: 8px; font-size: 0.95rem;">${eval.text}</p>
-                                
-                                <!-- Exibir dados opcionais da avaliação -->
-                                ${eval.ambient ? `
-                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-                                        <i class="fas fa-users" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                        <span style="color: var(--gray); font-size: 0.9rem;">Ambiente: ${eval.ambient}</span>
-                                    </div>
-                                ` : ''}
-                                
-                                ${eval.benefits && eval.benefits.length > 0 ? `
-                                    <div style="margin-bottom: 5px;">
-                                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 3px;">
-                                            <i class="fas fa-gift" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                            <span style="color: var(--gray); font-size: 0.9rem;">Benefícios:</span>
-                                        </div>
-                                        <div style="display: flex; flex-wrap: wrap; gap: 5px; font-size: 0.85rem;">
-                                            ${eval.benefits.map(benefit => `
-                                                <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 10px;">
-                                                    ${benefit}
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                ${eval.salary ? `
-                                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 5px;">
-                                        <i class="fas fa-money-bill-wave" style="color: var(--gray); font-size: 0.9rem;"></i>
-                                        <span style="color: var(--gray); font-size: 0.9rem;">
-                                            Salário: R$ ${eval.salary.amount} ${eval.salary.period === 'mensal' ? '/mês' : '/ano'}
-                                        </span>
-                                    </div>
-                                ` : ''}
-                                
-                                <small style="color: var(--gray);">
-                                    ${new Date(eval.date).toLocaleDateString('pt-BR')}
-                                    ${eval.avisoAceito ? '<i class="fas fa-check-circle" style="color: #10b981; margin-left: 5px;"></i>' : ''}
-                                </small>
-                            </div>
-                        `).join('')}
-                    </div>` :
-                    `<p style="text-align: center; color: var(--gray); padding: 20px;">
-                        Nenhuma avaliação disponível. Seja o primeiro a avaliar!
-                    </p>`
-                }
-            </div>
-            
-            <div style="margin-top: 20px; text-align: center;">
-                <button onclick="closeModal()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: 500;">
-                    Fechar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    showModal(modalContent);
-}
-
-// ==================== COMO FUNCIONA SECTION ====================
-function initComoFuncionaSection() {
-    const passos = document.querySelectorAll('.passo-card');
-    const detalhes = document.querySelectorAll('.detalhe-item');
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    });
-    
-    passos.forEach((passo, index) => {
-        passo.style.opacity = '0';
-        passo.style.transform = 'translateY(20px)';
-        passo.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        passo.style.transitionDelay = `${index * 0.2}s`;
-        observer.observe(passo);
-    });
-    
-    detalhes.forEach((detalhe, index) => {
-        detalhe.style.opacity = '0';
-        detalhe.style.transform = 'translateY(20px)';
-        detalhe.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-        detalhe.style.transitionDelay = `${index * 0.1}s`;
-        observer.observe(detalhe);
+        container.appendChild(div);
     });
 }
 
-function scrollToComoFunciona() {
-    const section = document.getElementById('como-funciona');
-    if (section) {
-        section.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-        });
-        
-        section.style.animation = 'highlight 2s ease';
-        
-        setTimeout(() => {
-            section.style.animation = '';
-        }, 2000);
+// ================== EVENTOS GERAIS ==================
+document.addEventListener("click", (e) => {
+    const menu = document.getElementById("user-menu");
+    if (!menu) return;
+
+    if (!e.target.closest(".user-menu-container")) {
+        menu.style.display = "none";
     }
-}
-
-// Adicionar estilo CSS para highlight
-const highlightStyle = document.createElement('style');
-highlightStyle.textContent = `
-    @keyframes highlight {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(37, 99, 235, 0.1); }
-        100% { background-color: transparent; }
-    }
-    
-    #como-funciona {
-        scroll-margin-top: 80px;
-    }
-`;
-document.head.appendChild(highlightStyle);
-
-// ==================== MODAL GENERICO ====================
-function showModal(content) {
-    // Fechar modal existente
-    closeModal();
-    
-    const modal = document.createElement('div');
-    modal.id = 'custom-modal';
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            ${content}
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    setTimeout(() => modal.classList.add('active'), 10);
-    
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-    
-    document.addEventListener('keydown', function escHandler(e) {
-        if (e.key === 'Escape') {
-            closeModal();
-            document.removeEventListener('keydown', escHandler);
-        }
-    });
-}
-
-function closeModal() {
-    const modal = document.getElementById('custom-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-}
-
-// ==================== UTILITÁRIOS ====================
-function scrollToElement(selector) {
-    const element = document.querySelector(selector);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-}
-
-function scrollToTop(e) {
-    if (e) e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
-    
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        info: 'fas fa-info-circle'
-    };
-    
-    const colors = {
-        success: '#10b981',
-        error: '#dc2626',
-        info: '#3b82f6'
-    };
-    
-    toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
-    toast.style.background = colors[type] || colors.info;
-    toast.className = 'toast show';
-    
-    setTimeout(() => {
-        toast.className = 'toast';
-    }, 3000);
-}
-
-function requestLocationPermission() {
-    if (!navigator.geolocation) {
-        showToast('Geolocalização não suportada', 'error');
-        return;
-    }
-    
-    showToast('Solicitando permissão...', 'info');
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            locationPermission = true;
-            localStorage.setItem('reputai_location_permission', 'granted');
-            showToast('Localização ativada!', 'success');
-            updateLocationStatus('Localização ativa', true);
-            locateUser();
-        },
-        (error) => {
-            console.error('Erro na permissão:', error);
-            locationPermission = false;
-            localStorage.setItem('reputai_location_permission', 'denied');
-            showToast('Permissão negada', 'error');
-            updateLocationStatus('Clique para ativar', false);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
-}
-
-function updateLocationStatus(message, isActive) {
-    const statusElement = document.getElementById('location-text');
-    if (statusElement) {
-        statusElement.innerHTML = `
-            <i class="fas fa-${isActive ? 'check-circle' : 'map-marker-alt'}" 
-               style="color: ${isActive ? 'var(--success)' : 'var(--gray)'}"></i>
-            ${message}
-        `;
-        
-        const btn = document.querySelector('.btn-location');
-        if (btn) {
-            if (isActive) {
-                btn.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
-                btn.onclick = locateUser;
-            } else {
-                btn.innerHTML = '<i class="fas fa-crosshairs"></i> Ativar';
-                btn.onclick = requestLocationPermission;
-            }
-        }
-    }
-}
-
-function checkLocationPermission() {
-    const permission = localStorage.getItem('reputai_location_permission');
-    if (permission === 'granted') {
-        locationPermission = true;
-        updateLocationStatus('Localização ativa', true);
-    }
-}
-
-// ==================== INICIALIZAÇÃO ====================
-function initApp() {
-    initHeaderScroll();
-    initTypingEffect();
-    initMap();
-    loadHomeCompanies();
-    initComoFuncionaSection();
-    checkLocationPermission();
-    
-    const savedLocation = localStorage.getItem('user_location');
-    if (savedLocation) {
-        try {
-            userLocation = JSON.parse(savedLocation);
-            updateLocationStatus('Localização salva', true);
-        } catch (e) {
-            console.error('Erro ao carregar localização:', e);
-        }
-    }
-}
-
-// ==================== FUNÇÕES AUXILIARES PARA MAPA ====================
-function getUserLocationName(lat, lng) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.address) {
-                let locationName = '';
-                if (data.address.city || data.address.town) {
-                    locationName = data.address.city || data.address.town;
-                } else if (data.address.state) {
-                    locationName = data.address.state;
-                } else if (data.address.country) {
-                    locationName = data.address.country;
-                }
-                
-                if (locationName) {
-                    document.getElementById('current-location').textContent = locationName;
-                    document.getElementById('location-info').style.display = 'block';
-                    
-                    localStorage.setItem('user_location', JSON.stringify({
-                        lat: lat,
-                        lng: lng,
-                        name: locationName
-                    }));
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao obter nome da localização:', error);
-            document.getElementById('current-location').textContent = 
-                `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
-            document.getElementById('location-info').style.display = 'block';
-        });
-}
-
-// ==================== EXPORTAR FUNÇÕES GLOBAIS ====================
-window.scrollToElement = scrollToElement;
-window.scrollToTop = scrollToTop;
-window.searchCompanies = searchCompanies;
-window.filterBySector = filterBySector;
-window.verificarAvaliacao = verificarAvaliacao;
-window.locateUser = locateUser;
-window.resetMapView = resetMapView;
-window.requestLocationPermission = requestLocationPermission;
-window.showCompanyDetails = showCompanyDetails;
-window.closeModal = closeModal;
-window.hideAvisoModal = hideAvisoModal;
-window.prosseguirAvaliacao = prosseguirAvaliacao;
-window.showCompanyDetailsFromMap = showCompanyDetailsFromMap;
-window.scrollToComoFunciona = scrollToComoFunciona;
-window.loadHomeCompanies = loadHomeCompanies;
-window.showModal = showModal;
-window.showToast = showToast;
+});

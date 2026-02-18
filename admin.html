@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ReputAí - Painel Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Painel administrativo do ReputAí. Gerencie usuários, avaliações e empresas de forma segura.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header id="main-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">R</div>
+                    <div class="logo-text">
+                        <h1>ReputAí</h1>
+                        <span>Painel Admin</span>
+                    </div>
+                </a>
+                
+                <nav>
+                    <ul>
+                        <li><a href="index.html"><i class="fas fa-home"></i> <span class="nav-text">Início</span></a></li>
+                        <li><a href="mapa.html"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
+                        <li><a href="avaliacao.html"><i class="fas fa-star"></i> <span class="nav-text">Avaliar</span></a></li>
+                        <li id="auth-nav-item">
+                            <div class="user-menu-container">
+                                <div class="user-avatar" id="user-avatar" onclick="toggleUserMenu()"></div>
+                                <div class="user-menu" id="user-menu">
+                                    <a href="perfil.html"><i class="fas fa-user"></i> Meu Perfil</a>
+                                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="admin-container">
+        <div class="container">
+            <h2><i class="fas fa-crown"></i> Painel Administrativo</h2>
+            <p>Gerencie usuários, avaliações e empresas com segurança e controle total.</p>
+
+            <!-- ESTATÍSTICAS GERAIS -->
+            <section class="admin-stats">
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <h3 id="total-users">0</h3>
+                    <p>Usuários cadastrados</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-building"></i>
+                    <h3 id="total-companies">0</h3>
+                    <p>Empresas cadastradas</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-star"></i>
+                    <h3 id="total-reviews">0</h3>
+                    <p>Avaliações publicadas</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3 id="total-reports">0</h3>
+                    <p>Denúncias pendentes</p>
+                </div>
+            </section>
+
+            <!-- CENTRAL DE DENÚNCIAS -->
+            <section class="admin-reports">
+                <h3><i class="fas fa-exclamation-circle"></i> Central de Denúncias</h3>
+                <p>Revise e gerencie avaliações denunciadas pelos usuários.</p>
+                <div id="reports-list" class="reports-grid">
+                    <!-- Denúncias serão carregadas aqui via JS -->
+                </div>
+            </section>
+
+            <!-- LISTAGEM DE EMPRESAS -->
+            <section class="admin-companies">
+                <h3><i class="fas fa-building"></i> Empresas</h3>
+                <p>Edite, remova ou destaque empresas cadastradas.</p>
+                <div id="admin-companies-list" class="companies-grid">
+                    <!-- Empresas carregadas via JS -->
+                </div>
+            </section>
+
+            <!-- LISTAGEM DE USUÁRIOS -->
+            <section class="admin-users">
+                <h3><i class="fas fa-users"></i> Usuários</h3>
+                <p>Gerencie perfis de usuários e roles.</p>
+                <div id="admin-users-list" class="users-grid">
+                    <!-- Usuários carregados via JS -->
+                </div>
+            </section>
+
+            <!-- BASE DE TESTES -->
+            <section class="admin-tests">
+                <h3><i class="fas fa-vial"></i> Base de Testes</h3>
+                <p>Ferramentas para testar funcionalidades do site em ambiente seguro.</p>
+                <div class="test-actions">
+                    <button class="btn btn-secondary" onclick="populateTestCompanies()">Gerar Empresas de Teste</button>
+                    <button class="btn btn-secondary" onclick="populateTestUsers()">Gerar Usuários de Teste</button>
+                    <button class="btn btn-secondary" onclick="populateTestReviews()">Gerar Avaliações de Teste</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 ReputAí. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="firebase-config.js" type="module"></script>
+    <script src="auth.js" type="module"></script>
+    <script src="script.js" type="module"></script>
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { doc, getDoc, getDocs, collection, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+        import { showToast } from './script.js';
+
+        // =======================
+        // VERIFICAÇÃO DE ADMIN
+        // =======================
+        auth.onAuthStateChanged(async user => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+            const data = userDoc.exists() ? userDoc.data() : {};
+
+            if (data.role !== 'admin') {
+                showToast('Acesso restrito a administradores', 'error');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            loadAdminDashboard();
+        });
+
+        // =======================
+        // CARREGAR DASHBOARD ADMIN
+        // =======================
+        async function loadAdminDashboard() {
+            await loadStats();
+            await loadReports();
+            await loadCompanies();
+            await loadUsers();
+        }
+
+        // Função placeholders: preencher com consultas Firestore
+        async function loadStats() {
+            const usersSnapshot = await getDocs(collection(db, 'usuarios'));
+            const companiesSnapshot = await getDocs(collection(db, 'empresas'));
+            const reviewsSnapshot = await getDocs(collection(db, 'avaliacoes'));
+            const reportsSnapshot = await getDocs(query(collection(db, 'avaliacoes'), where('report', '==', true)));
+
+            document.getElementById('total-users').textContent = usersSnapshot.size;
+            document.getElementById('total-companies').textContent = companiesSnapshot.size;
+            document.getElementById('total-reviews').textContent = reviewsSnapshot.size;
+            document.getElementById('total-reports').textContent = reportsSnapshot.size;
+        }
+
+        async function loadReports() {
+            const reportsContainer = document.getElementById('reports-list');
+            reportsContainer.innerHTML = '';
+
+            const reportsSnapshot = await getDocs(query(collection(db, 'avaliacoes'), where('report', '==', true)));
+            reportsSnapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const div = document.createElement('div');
+                div.className = 'report-card';
+                div.innerHTML = `
+                    <p><strong>${data.userName}</strong> denunciou:</p>
+                    <p>${data.comment}</p>
+                    <div class="report-actions">
+                        <button class="btn btn-primary" onclick="approveReport('${docSnap.id}')">Aprovar</button>
+                        <button class="btn btn-danger" onclick="deleteReport('${docSnap.id}')">Remover</button>
+                    </div>
+                `;
+                reportsContainer.appendChild(div);
+            });
+        }
+
+        window.approveReport = async function(reportId) {
+            try {
+                await updateDoc(doc(db, 'avaliacoes', reportId), { report: false });
+                showToast('Denúncia aprovada e ocultada', 'success');
+                loadReports();
+            } catch (error) {
+                showToast('Erro ao aprovar denúncia: ' + error.message, 'error');
+            }
+        };
+
+        window.deleteReport = async function(reportId) {
+            try {
+                await deleteDoc(doc(db, 'avaliacoes', reportId));
+                showToast('Avaliação removida com sucesso', 'success');
+                loadReports();
+            } catch (error) {
+                showToast('Erro ao remover avaliação: ' + error.message, 'error');
+            }
+        };
+
+        async function loadCompanies() {
+            const container = document.getElementById('admin-companies-list');
+            container.innerHTML = '';
+            const snapshot = await getDocs(collection(db, 'empresas'));
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const div = document.createElement('div');
+                div.className = 'company-card';
+                div.innerHTML = `
+                    <h4>${data.nome}</h4>
+                    <p>Setor: ${data.setor || '-'}</p>
+                    <div class="company-actions">
+                        <button class="btn btn-secondary" onclick="editCompany('${docSnap.id}')">Editar</button>
+                        <button class="btn btn-danger" onclick="deleteCompany('${docSnap.id}')">Remover</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function loadUsers() {
+            const container = document.getElementById('admin-users-list');
+            container.innerHTML = '';
+            const snapshot = await getDocs(collection(db, 'usuarios'));
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const div = document.createElement('div');
+                div.className = 'user-card';
+                div.innerHTML = `
+                    <h4>${data.nome}</h4>
+                    <p>Email: ${data.email}</p>
+                    <p>Role: ${data.role}</p>
+                    <div class="user-actions">
+                        <button class="btn btn-secondary" onclick="toggleRole('${docSnap.id}', '${data.role}')">Alternar Role</button>
+                        <button class="btn btn-danger" onclick="deleteUser('${docSnap.id}')">Remover</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Funções de teste
+        window.populateTestCompanies = async function() {
+            showToast('Função de teste: Gerar empresas', 'info');
+        };
+        window.populateTestUsers = async function() {
+            showToast('Função de teste: Gerar usuários', 'info');
+        };
+        window.populateTestReviews = async function() {
+            showToast('Função de teste: Gerar avaliações', 'info');
+        };
+    </script>
+</body>
+</html>

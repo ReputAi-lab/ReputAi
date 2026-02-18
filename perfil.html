@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ReputAí - Meu Perfil</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Visualize e edite seu perfil, gerencie suas avaliações e acompanhe seu histórico.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="global-loading">
+        <div class="loading-spinner"></div>
+        <h2>ReputAí</h2>
+        <p>Carregando informações do seu perfil...</p>
+    </div>
+
+    <header id="main-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">R</div>
+                    <div class="logo-text">
+                        <h1>ReputAí</h1>
+                        <span>Avaliações reais de empresas</span>
+                    </div>
+                </a>
+
+                <nav>
+                    <ul>
+                        <li><a href="index.html"><i class="fas fa-home"></i> <span class="nav-text">Início</span></a></li>
+                        <li><a href="mapa.html"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
+                        <li><a href="avaliacao.html"><i class="fas fa-star"></i> <span class="nav-text">Avaliar</span></a></li>
+                        <li id="auth-nav-item">
+                            <div class="user-menu-container">
+                                <div class="user-avatar" id="user-avatar" style="display: none;" onclick="toggleUserMenu()"></div>
+                                <div class="user-menu" id="user-menu" style="display: none;">
+                                    <a href="perfil.html"><i class="fas fa-user"></i> Meu Perfil</a>
+                                    <a href="admin.html" id="admin-link" style="display: none;"><i class="fas fa-crown"></i> Painel Admin</a>
+                                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
+                            </div>
+                            <a href="#" class="nav-btn" id="login-btn" onclick="showAuthModal(); return false;">
+                                <i class="fas fa-user"></i> <span class="nav-text">Entrar</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section class="perfil-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-user"></i> Meu Perfil</h2>
+                <p>Gerencie seus dados e acompanhe suas avaliações</p>
+            </div>
+
+            <div class="perfil-card">
+                <h3>Informações Pessoais</h3>
+                <label for="perfil-nome">Nome:</label>
+                <input type="text" id="perfil-nome" placeholder="Seu nome completo">
+
+                <label for="perfil-email">Email:</label>
+                <input type="email" id="perfil-email" placeholder="Seu email" disabled>
+
+                <label for="perfil-cpf">CPF (opcional):</label>
+                <input type="text" id="perfil-cpf" placeholder="CPF" maxlength="11">
+
+                <label for="perfil-senha">Nova Senha (opcional):</label>
+                <input type="password" id="perfil-senha" placeholder="Digite nova senha se quiser alterar">
+
+                <button class="btn btn-primary" onclick="updateProfile()">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+            </div>
+
+            <div class="avaliacoes-usuario">
+                <h3>Minhas Avaliações</h3>
+                <div id="user-reviews-list">
+                    <p>Carregando suas avaliações...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 ReputAí. Todos os direitos reservados.</p>
+            <p style="margin-top: 1rem;">
+                <a href="#" onclick="showTermosModal(); return false;"><i class="fas fa-file-contract"></i> Termos de Uso</a> | 
+                <a href="#" onclick="showTermosModal(); return false;"><i class="fas fa-shield-alt"></i> Política de Privacidade</a> | 
+                <a href="#"><i class="fas fa-envelope"></i> Contato</a>
+            </p>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged, updatePassword } from 'firebase/auth';
+        import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+
+        const nomeInput = document.getElementById('perfil-nome');
+        const emailInput = document.getElementById('perfil-email');
+        const cpfInput = document.getElementById('perfil-cpf');
+        const senhaInput = document.getElementById('perfil-senha');
+        const reviewsList = document.getElementById('user-reviews-list');
+
+        onAuthStateChanged(auth, async user => {
+            if (user) {
+                document.getElementById('global-loading').style.display = 'none';
+                nomeInput.value = user.displayName || '';
+                emailInput.value = user.email || '';
+
+                const userDocRef = doc(db, 'usuarios', user.uid);
+                const userSnap = await getDoc(userDocRef);
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    cpfInput.value = data.cpf || '';
+                    if (data.role === 'admin') {
+                        document.getElementById('admin-link').style.display = 'block';
+                    }
+                }
+
+                loadUserReviews(user.uid);
+            } else {
+                showToast('Você precisa estar logado para acessar seu perfil', 'error');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            }
+        });
+
+        async function updateProfile() {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const userDocRef = doc(db, 'usuarios', user.uid);
+            try {
+                await updateDoc(userDocRef, {
+                    nome: nomeInput.value,
+                    cpf: cpfInput.value
+                });
+
+                if (senhaInput.value) {
+                    await updatePassword(user, senhaInput.value);
+                }
+
+                showToast('Perfil atualizado com sucesso!', 'success');
+                senhaInput.value = '';
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao atualizar perfil', 'error');
+            }
+        }
+
+        async function loadUserReviews(uid) {
+            reviewsList.innerHTML = 'Carregando suas avaliações...';
+            try {
+                const q = query(collection(db, 'avaliacoes'), where('usuarioId', '==', uid));
+                const querySnapshot = await getDocs(q);
+                reviewsList.innerHTML = '';
+                if (querySnapshot.empty) {
+                    reviewsList.innerHTML = '<p>Você ainda não fez nenhuma avaliação.</p>';
+                    return;
+                }
+
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const reviewItem = document.createElement('div');
+                    reviewItem.className = 'user-review-card';
+                    reviewItem.innerHTML = `
+                        <h4>Empresa: ${data.empresaId}</h4>
+                        <p>Nota: ${data.nota} ⭐</p>
+                        <p>${data.comentario}</p>
+                        <small>Em: ${data.criadoEm.toDate().toLocaleDateString()}</small>
+                    `;
+                    reviewsList.appendChild(reviewItem);
+                });
+            } catch (err) {
+                console.error(err);
+                reviewsList.innerHTML = '<p>Erro ao carregar suas avaliações.</p>';
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+
+            if (type === 'success') toast.style.backgroundColor = 'var(--success)';
+            else if (type === 'error') toast.style.backgroundColor = 'var(--danger)';
+            else toast.style.backgroundColor = 'var(--info)';
+
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Controla exibição do menu do usuário
+        window.toggleUserMenu = () => {
+            const menu = document.getElementById('user-menu');
+            if (menu.style.display === 'block') menu.style.display = 'none';
+            else menu.style.display = 'block';
+        };
+    </script>
+</body>
+</html>

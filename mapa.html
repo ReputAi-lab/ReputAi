@@ -2,22 +2,24 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>ReputAí - Empresas</title>
+    <title>ReputAí - Mapa de Empresas</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Lista completa de empresas brasileiras. Confira avaliações reais e encontre o melhor lugar para trabalhar.">
+    <meta name="description" content="Mapa interativo de empresas brasileiras. Encontre empresas bem avaliadas próximas de você.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div id="global-loading">
         <div class="loading-spinner"></div>
         <h2>ReputAí</h2>
-        <p>Carregando empresas...</p>
+        <p>Carregando mapa interativo...</p>
     </div>
 
     <header id="main-header">
@@ -34,8 +36,8 @@
                 <nav>
                     <ul>
                         <li><a href="index.html"><i class="fas fa-home"></i> <span class="nav-text">Início</span></a></li>
-                        <li><a href="mapa.html"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
-                        <li><a href="empresas.html" class="active"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
+                        <li><a href="mapa.html" class="active"><i class="fas fa-map"></i> <span class="nav-text">Mapa</span></a></li>
+                        <li><a href="empresas.html"><i class="fas fa-building"></i> <span class="nav-text">Empresas</span></a></li>
                         <li><a href="avaliacao.html"><i class="fas fa-star"></i> <span class="nav-text">Avaliar</span></a></li>
                         <li id="auth-nav-item">
                             <div class="user-menu-container">
@@ -56,33 +58,14 @@
         </div>
     </header>
 
-    <section class="search-section">
-        <div class="container">
-            <div class="search-card">
-                <input type="text" id="search-company" placeholder="Pesquisar por nome, setor ou cidade...">
-                <button class="btn-search" onclick="searchCompanies()">
-                    <i class="fas fa-search"></i> Buscar
-                </button>
-            </div>
-
-            <div class="filter-tags">
-                <span class="filter-tag" onclick="filterBySector('Tecnologia')"><i class="fas fa-laptop-code"></i> Tecnologia</span>
-                <span class="filter-tag" onclick="filterBySector('Finanças')"><i class="fas fa-chart-line"></i> Finanças</span>
-                <span class="filter-tag" onclick="filterBySector('Saúde')"><i class="fas fa-heartbeat"></i> Saúde</span>
-                <span class="filter-tag" onclick="filterBySector('Educação')"><i class="fas fa-graduation-cap"></i> Educação</span>
-                <span class="filter-tag" onclick="filterBySector('Varejo')"><i class="fas fa-shopping-cart"></i> Varejo</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="companies-section">
+    <section class="mapa-section">
         <div class="container">
             <div class="section-header">
-                <h2><i class="fas fa-building"></i> Lista de Empresas</h2>
-                <p>Confira todas as empresas cadastradas e suas avaliações</p>
+                <h2><i class="fas fa-map"></i> Mapa de Empresas</h2>
+                <p>Encontre empresas bem avaliadas próximas de você.</p>
             </div>
 
-            <div id="companies-list" class="companies-grid"></div>
+            <div id="map" style="height: 600px; border-radius: 12px; overflow: hidden;"></div>
         </div>
     </section>
 
@@ -99,69 +82,41 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { db } from './firebase-config.js';
-        import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+        import { collection, getDocs } from 'firebase/firestore';
 
-        let allCompanies = [];
+        document.addEventListener('DOMContentLoaded', async () => {
+            const map = L.map('map').setView([-15.7801, -47.9292], 4); // Centro do Brasil
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-        async function loadCompanies() {
             try {
                 const empresasRef = collection(db, 'empresas');
                 const snapshot = await getDocs(empresasRef);
-                allCompanies = [];
+
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    allCompanies.push({ id: docSnap.id, ...data });
+                    if (data.latitude && data.longitude) {
+                        const marker = L.marker([data.latitude, data.longitude]).addTo(map);
+                        marker.bindPopup(`
+                            <strong>${data.nome}</strong><br>
+                            Setor: ${data.setor}<br>
+                            Média: ${data.media ? data.media.toFixed(1) : '0.0'} estrelas<br>
+                            <a href="empresas.html?empresa=${docSnap.id}" class="btn-popup">Ver Empresa</a>
+                        `);
+                    }
                 });
-                renderCompanies(allCompanies);
 
                 const loading = document.getElementById('global-loading');
                 if (loading) loading.style.display = 'none';
             } catch (err) {
-                console.error('Erro ao carregar empresas:', err);
-                showToast('Erro ao carregar empresas', 'error');
+                console.error('Erro ao carregar empresas no mapa:', err);
+                showToast('Erro ao carregar empresas no mapa', 'error');
             }
-        }
-
-        function renderCompanies(companies) {
-            const container = document.getElementById('companies-list');
-            container.innerHTML = '';
-            if (companies.length === 0) {
-                container.innerHTML = '<p style="text-align:center; font-weight:bold;">Nenhuma empresa encontrada.</p>';
-                return;
-            }
-
-            companies.forEach(company => {
-                const div = document.createElement('div');
-                div.className = 'company-card';
-                div.innerHTML = `
-                    <div class="company-info">
-                        <h3>${company.nome}</h3>
-                        <p><strong>Setor:</strong> ${company.setor}</p>
-                        <p><strong>Cidade:</strong> ${company.cidade || 'Não informado'}</p>
-                        <p><strong>Média:</strong> ${company.media ? company.media.toFixed(1) : '0.0'} estrelas</p>
-                        <a href="empresas.html?empresa=${company.id}" class="btn btn-secondary">Ver Detalhes</a>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function searchCompanies() {
-            const queryValue = document.getElementById('search-company').value.toLowerCase();
-            const filtered = allCompanies.filter(c => 
-                c.nome.toLowerCase().includes(queryValue) ||
-                (c.setor && c.setor.toLowerCase().includes(queryValue)) ||
-                (c.cidade && c.cidade.toLowerCase().includes(queryValue))
-            );
-            renderCompanies(filtered);
-        }
-
-        function filterBySector(sector) {
-            const filtered = allCompanies.filter(c => c.setor === sector);
-            renderCompanies(filtered);
-        }
+        });
 
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
@@ -180,16 +135,6 @@
                 toast.classList.remove('show');
             }, 3000);
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCompanies();
-            document.querySelectorAll('.filter-tag').forEach(tag => {
-                tag.addEventListener('click', function() {
-                    const sector = this.textContent.trim();
-                    filterBySector(sector);
-                });
-            });
-        });
     </script>
 </body>
 </html>
